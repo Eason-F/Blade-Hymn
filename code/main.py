@@ -1,6 +1,8 @@
 from pytmx.util_pygame import load_pygame
 
 from constants import *
+from utility import import_image, import_folder
+
 from level import Level
 
 class Game:
@@ -12,11 +14,19 @@ class Game:
 
         self.clock = pygame.time.Clock()
 
+        self.level_frames = {}
+        self.player_frames = {}
+        self.import_assets()
+
         self.tmx_data = {
-            0: load_pygame(os.path.join(abs_path, "Data", "tmx", "testmap.tmx"))
+            0: load_pygame(os.path.join(abs_path, "data", "tmx", "testmap.tmx"))
         }
 
         self.current_level = Level(self.tmx_data[0])
+
+    def import_assets(self):
+        self.level_frames = {}
+        self.player_frames = import_folder("assets", "graphics", "player")
 
     def run(self):
         running = True

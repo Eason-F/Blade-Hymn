@@ -1,9 +1,10 @@
 from constants import *
+from timer import Timer
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos, groups, collision_sprites):
         super().__init__(groups)
-        self.image = pygame.image.load(os.path.join(abs_path, "Assets", "Graphics", "player", "player.png")).convert_alpha()
+        self.image = pygame.image.load(os.path.join(abs_path, "assets", "graphics", "player", "player.png")).convert_alpha()
 
         # hitbox_rect
         self.rect = self.image.get_frect(topleft=pos)
@@ -14,16 +15,14 @@ class Player(pygame.sprite.Sprite):
 
         # movement
         self.gravity = GRAVITY
-        self.friction = 10
+        self.friction = 0.85
         self.velocity = vector(0, 0)
         self.speed = 25
 
         self.is_jumping = False
-        self.jump_height = 12
+        self.jump_height = 6
 
         self.dash_distance = 25
-        self.dash_cooldown_length = 0.75
-        self.dash_cooldown = 0
         self.max_dash_count = 2
         self.dash_count = self.max_dash_count
 
@@ -33,6 +32,12 @@ class Player(pygame.sprite.Sprite):
         self.colliding = {
             "ground": False,
             "hitbox": False
+        }
+
+        # timers
+        self.timers = {
+            "dash": Timer(1500, auto_start=True, repeat=True),
+            "dash_cooldown": Timer(250, sustained=True),
         }
 
     def input(self):
@@ -53,15 +58,12 @@ class Player(pygame.sprite.Sprite):
                 self.is_jumping = True
 
     def move(self, dt):
-        self.dash_cooldown -= dt
-
-        self.velocity.x *= 0.85
+        self.velocity.x *= self.friction
         self.hitbox_rect.x += self.velocity.x * self.speed * dt
         self.collision('x')
 
-        self.velocity.y += (self.gravity / 2) * dt
+        self.velocity.y += self.gravity * dt
         self.hitbox_rect.y += self.velocity.y
-        self.velocity.y += (self.gravity / 2) * dt
         self.collision('y')
 
         if self.is_jumping:
@@ -69,18 +71,20 @@ class Player(pygame.sprite.Sprite):
             self.hitbox_rect.bottom += 1
             self.is_jumping = False
 
+        if self.timers["dash"].active:
+            self.dash_count = self.dash_count + 1 if self.dash_count < self.max_dash_count else self.max_dash_count
+
         self.rect.center = self.hitbox_rect.center
         self.move_camera()
 
     def dash(self, speed):
-        if self.dash_cooldown <= 0:
-            self.dash_count = self.max_dash_count
-
-        if self.dash_cooldown <= self.dash_cooldown_length / 1.5 and self.dash_count > 0:
+        if self.dash_count > 0 and not self.timers["dash_cooldown"].active:
             dash_direction = self.velocity.x / abs(self.velocity.x) if abs(self.velocity.x) else 1
             speed = self.dash_distance * dash_direction
-            self.dash_cooldown = self.dash_cooldown_length
+
             self.dash_count -= 1
+            self.timers["dash_cooldown"].activate()
+
         return speed
 
     def check_collisions(self):
@@ -115,8 +119,13 @@ class Player(pygame.sprite.Sprite):
         self.camera_rect.x += (self.hitbox_rect.x - self.camera_rect.x) * camera_speed
         self.camera_rect.y += (self.hitbox_rect.y - self.camera_rect.y) * camera_speed
 
+    def update_timers(self):
+        for timer in self.timers.values():
+            timer.update()
+
     def update(self, dt):
         self.prev_rect = self.hitbox_rect.copy()
+        self.update_timers()
         self.check_collisions()
         self.input()
         self.move(dt)

@@ -17,4 +17,4 @@ MASTER_DISPLAY = pygame.surface.Surface((GAME_WIDTH, GAME_HEIGHT))
 # game
 FPS = 60
 
-GRAVITY = 40
+GRAVITY = 20
