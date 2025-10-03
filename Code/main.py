@@ -21,7 +21,7 @@ class Game:
     def run(self):
         running = True
         while running:
-            dt = self.clock.tick(60) / 1000
+            dt = self.clock.tick(FPS) / 1000
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False

@@ -1,13 +1,16 @@
 from constants import *
 from sprite import Sprite
 from player import Player
+from groups import AllSprites
 
 class Level:
     def __init__(self, tmx_map):
         self.display_surf = MASTER_DISPLAY
 
-        self.all_sprites = pygame.sprite.Group()
+        self.all_sprites = AllSprites()
         self.collision_sprites = pygame.sprite.Group()
+
+        self.player = None
 
         self.setup(tmx_map)
 
@@ -17,9 +20,9 @@ class Level:
 
         for obj in tmx_map.get_layer_by_name("objects"):
             if obj.name == "player":
-                Player((obj.x, obj.y), self.all_sprites, self.collision_sprites)
+                self.player = Player((obj.x, obj.y), self.all_sprites, self.collision_sprites)
 
     def run(self, dt):
         self.display_surf.fill('black')
         self.all_sprites.update(dt)
-        self.all_sprites.draw(self.display_surf)
+        self.all_sprites.draw(self.display_surf, self.player.camera_rect.center)

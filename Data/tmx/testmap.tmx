@@ -1,19 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="19" tilewidth="16" tileheight="16" infinite="0" nextlayerid="11" nextobjectid="2">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="19" tilewidth="16" tileheight="16" infinite="0" nextlayerid="13" nextobjectid="8">
  <tileset firstgid="1" source="../tsx/spring.tsx"/>
  <tileset firstgid="49" source="../tsx/player.tsx"/>
- <imagelayer id="2" name="bg1" opacity="0.5" offsetx="1" offsety="-26">
-  <image source="../../Assets/Graphics/background/spring/1.png" width="576" height="324"/>
- </imagelayer>
- <imagelayer id="3" name="bg2" opacity="0.5" offsetx="1" offsety="-26">
-  <image source="../../Assets/Graphics/background/spring/2.png" width="576" height="324"/>
- </imagelayer>
- <imagelayer id="4" name="bg3" opacity="0.5" offsetx="1" offsety="-26">
-  <image source="../../Assets/Graphics/background/spring/3.png" width="576" height="324"/>
- </imagelayer>
- <imagelayer id="5" name="bg4" opacity="0.5" offsetx="1" offsety="-26">
-  <image source="../../Assets/Graphics/background/spring/4.png" width="576" height="324"/>
- </imagelayer>
+ <tileset firstgid="50" source="../tsx/spring_bg.tsx"/>
+ <objectgroup id="12" name="background">
+  <object id="2" gid="50" x="0" y="304" width="576" height="324"/>
+  <object id="5" gid="51" x="0" y="304" width="576" height="324"/>
+  <object id="6" gid="52" x="0" y="304" width="576" height="324"/>
+  <object id="7" gid="53" x="0" y="304" width="576" height="324"/>
+ </objectgroup>
  <layer id="1" name="ground" width="30" height="19">
   <data encoding="csv">
 34,34,36,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,21,
