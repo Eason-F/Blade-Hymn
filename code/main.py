@@ -1,7 +1,7 @@
 from pytmx.util_pygame import load_pygame
 
 from constants import *
-from utility import import_image, import_folder
+from utility import import_image, import_subfolders
 
 from level import Level
 
@@ -22,11 +22,11 @@ class Game:
             0: load_pygame(os.path.join(abs_path, "data", "tmx", "testmap.tmx"))
         }
 
-        self.current_level = Level(self.tmx_data[0])
+        self.current_level = Level(self.tmx_data[0], self.level_frames, self.player_frames)
 
     def import_assets(self):
         self.level_frames = {}
-        self.player_frames = import_folder("assets", "graphics", "player")
+        self.player_frames = import_subfolders("assets", "graphics", "player")
 
     def run(self):
         running = True
