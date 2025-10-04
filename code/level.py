@@ -10,6 +10,9 @@ class Level:
         self.all_sprites = AllSprites()
         self.collision_sprites = pygame.sprite.Group()
 
+        self.player_rects = []
+        self.enemy_rects = []
+
         self.player = None
 
         self.setup(tmx_map, level_frames, player_frames)
@@ -24,6 +27,8 @@ class Level:
                     pos = (obj.x, obj.y),
                     groups = self.all_sprites,
                     collision_sprites = self.collision_sprites,
+                    attack_rects = self.player_rects,
+                    enemy_rects = self.enemy_rects,
                     frames = player_frames
                 )
 

@@ -6,18 +6,21 @@ class Timer:
         self.repeat = repeat
         self.sustained = sustained
 
+        self.activated = False
+
         self.active = False
         self.start_time = 0
         if auto_start:
             self.activate()
 
     def activate(self):
+        self.activated = True
         self.start_time = pygame.time.get_ticks()
         if self.sustained:
             self.active = True
 
     def deactivate(self):
-        self.start_time = 0
+        self.activated = False
         if self.sustained:
             self.active = False
 
@@ -26,10 +29,11 @@ class Timer:
             self.active = False
 
         current_time = pygame.time.get_ticks()
-        if current_time - self.start_time >= self.duration:
-            self.active = True
+        if self.activated:
+            if current_time - self.start_time >= self.duration:
+                self.active = True
 
-            if self.repeat:
-                self.activate()
-            else:
-                self.deactivate()
+                if self.repeat:
+                    self.activate()
+                else:
+                    self.deactivate()

@@ -2,7 +2,7 @@ from constants import *
 from timer import Timer
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos, groups, collision_sprites, frames):
+    def __init__(self, pos, groups, collision_sprites, attack_rects, enemy_rects, frames):
         super().__init__(groups)
 
         # animation
@@ -10,7 +10,7 @@ class Player(pygame.sprite.Sprite):
         self.state, self.facing_right = 'idle', True
         self.image = self.frames[self.state][self.frame_index]
 
-        # hitbox_rect
+        # hitbox rect
         self.rect = self.image.get_frect(topleft=pos)
         self.hitbox_rect = self.rect.inflate(-72, -32)
         self.prev_rect = self.hitbox_rect.copy()
@@ -28,15 +28,18 @@ class Player(pygame.sprite.Sprite):
         self.jump_height = 300
 
         self.dash_distance = self.acceleration * 20
-        self.max_dash_count = 2
-        self.dash_count = self.max_dash_count
+        self.max_dash_count = 2; self.dash_count = self.max_dash_count
 
         # attack
-        self.is_attacking = False
-        self.attack_stage = 1
+        self.is_attacking = self.attack_combo = False
+        self.attack_stage, self.attack_stage_count = -1, 3
+        self.can_air_atk = True
 
         # collisions
         self.collision_sprites = collision_sprites
+
+        self.attack_rects = attack_rects
+        self.enemy_rects = enemy_rects
 
         self.colliding = {
             "ground": False,
@@ -47,33 +50,40 @@ class Player(pygame.sprite.Sprite):
         self.timers = {
             "dash": Timer(1500, auto_start=True, repeat=True),
             "dash_cooldown": Timer(250, sustained=True),
+            "attack_combo": Timer(200)
         }
 
     def input(self, dt):
         keys = pygame.key.get_pressed()
         movement_vect = vector(0, 0)
 
-        if keys[pygame.K_LEFT]:
-            movement_vect.x -= self.acceleration
-            self.facing_right = False
+        if not self.is_attacking:
+            if keys[pygame.K_LEFT]:
+                movement_vect.x -= self.acceleration
+                self.facing_right = False
 
-        if keys[pygame.K_RIGHT]:
-            movement_vect.x += self.acceleration
-            self.facing_right = True
+            if keys[pygame.K_RIGHT]:
+                movement_vect.x += self.acceleration
+                self.facing_right = True
 
-        if keys[pygame.K_LSHIFT]:
-            movement_vect.x = self.dash(movement_vect.x)
+            if keys[pygame.K_LSHIFT]:
+                movement_vect.x = self.dash(movement_vect.x)
+
+            if keys[pygame.K_SPACE]:
+                if self.colliding["ground"]:
+                    self.is_jumping = True
 
         self.velocity.x += movement_vect.x * dt
 
         if self.colliding["ground"]:
-            if keys[pygame.K_x]:
+            self.can_air_atk = True
+
+        if keys[pygame.K_x]:
+            if self.colliding["ground"] or self.can_air_atk:
                 self.attack()
+        self.attack_update()
 
-        if keys[pygame.K_SPACE]:
-            if self.colliding["ground"]:
-                self.is_jumping = True
-
+    # input related actions
     def dash(self, speed):
         if self.dash_count > 0 and not self.timers["dash_cooldown"].active:
             dash_direction = 1 if self.facing_right else -1
@@ -85,9 +95,34 @@ class Player(pygame.sprite.Sprite):
         return speed
 
     def attack(self):
-        self.is_attacking = True
-        self.attack_stage += 1
+        if self.colliding["ground"]:
+            self.attack_stage_count = 3
+        else:
+            self.attack_stage_count = 2
 
+        if not self.is_attacking:
+            self.attack_stage = (self.attack_stage + 1) % self.attack_stage_count
+            self.frame_index = 0
+
+        self.is_attacking = True
+        self.attack_combo = True
+        self.timers['attack_combo'].deactivate()
+
+    def attack_update(self):
+        if 'melee' in self.state or 'air' in self.state:
+            if self.frame_index >= len(self.frames[self.state]):
+                self.is_attacking = False
+                self.timers['attack_combo'].activate()
+
+                if self.attack_stage == 1 and 'air' in self.state:
+                    self.can_air_atk = False
+                    self.attack_combo = False
+
+        if self.timers['attack_combo'].active:
+            self.attack_combo = False
+            self.attack_stage = -1
+
+    # movement related actions
     def move(self, dt):
         friction_factor = self.friction * -self.velocity.x
         # if friction_factor * dt:
@@ -99,6 +134,8 @@ class Player(pygame.sprite.Sprite):
 
         # if abs(self.velocity.x) < 0.1: self.velocity.x = 0
 
+        if 'air' in self.state:
+            self.velocity.y = 0
         self.velocity.y += self.gravity / 2 * dt
         self.hitbox_rect.y += self.velocity.y * dt
         self.velocity.y += self.gravity / 2 * dt
@@ -148,17 +185,28 @@ class Player(pygame.sprite.Sprite):
 
     #animations
     def animate(self, dt):
-        self.frame_index += ANIMATION_SPEED * dt
-        if self.state == 'attack' and self.frame_index >= len(self.frames[self.state] + 2):
-            self.state = 'idle'
-
         self.image = self.frames[self.state][int(self.frame_index % len(self.frames[self.state]))]
         self.image = self.image if self.facing_right else pygame.transform.flip(self.image, True, False)
+        self.frame_index += ANIMATION_SPEED * dt
 
     def get_state(self):
+        print(self.state, int(self.frame_index % len(self.frames[self.state])))
         if self.colliding["ground"]:
-            self.state = 'idle' if abs(self.velocity.x) < 0.1 else 'run'
+            if self.is_attacking:
+                self.state = f'melee{self.attack_stage + 1}'
+            else:
+                self.state = 'idle' if abs(self.velocity.x) < 0.2 else 'run'
+        else:
+            if self.is_attacking and self.can_air_atk:
+                self.state = f'air{self.attack_stage + 1}'
+            else:
+                if self.velocity.y > 0:
+                    self.state = 'jump'
+                else:
+                    self.state = 'fall'
 
+        if self.timers["dash_cooldown"].active:
+            self.state = 'dash'
     def update_timers(self):
         for timer in self.timers.values():
             timer.update()
@@ -173,6 +221,3 @@ class Player(pygame.sprite.Sprite):
 
         self.get_state()
         self.animate(dt)
-
-# in combat jumping is disabled ie. combat lock
-# 2 consecutive dashes before cooldown
