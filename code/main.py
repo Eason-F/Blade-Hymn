@@ -1,3 +1,4 @@
+import json
 from pytmx.util_pygame import load_pygame
 
 from constants import *
@@ -16,17 +17,21 @@ class Game:
 
         self.level_frames = {}
         self.player_frames = {}
+        self.attack_impact_frames = {}
         self.import_assets()
 
         self.tmx_data = {
             0: load_pygame(os.path.join(abs_path, "data", "tmx", "testmap.tmx"))
         }
 
-        self.current_level = Level(self.tmx_data[0], self.level_frames, self.player_frames)
+        self.current_level = Level(self.tmx_data[0], self.level_frames, self.player_frames, self.attack_impact_frames)
 
     def import_assets(self):
         self.level_frames = {}
         self.player_frames = import_subfolders("assets", "graphics", "player")
+
+        with open(os.path.join(abs_path, "data", "json", "attack_data.json")) as jsonf:
+            self.attack_impact_frames = json.load(jsonf)
 
     def run(self):
         running = True

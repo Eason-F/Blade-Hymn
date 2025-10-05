@@ -1,0 +1,48 @@
+{
+  "player": {
+    "melee1": {
+      "impact": [3],
+      "size": [10, 40],
+      "rel_pos": [30, 0],
+      "damage": 5
+    },
+    "melee2": {
+      "impact": [2, 4],
+      "size": [10, 40],
+      "rel_pos": [30, 0],
+      "damage": 3
+    },
+    "melee3": {
+      "impact": [8],
+      "size": [15, 40],
+      "rel_pos": [35, 0],
+      "damage": 8
+    },
+    "air1": {
+      "impact": [1],
+      "size": [10, 20],
+      "rel_pos": [30, 0],
+      "damage": 2
+    },
+    "air2": {
+      "impact": [1],
+      "size": [10, 20],
+      "rel_pos": [30, 0],
+      "damage": 1
+    }
+  },
+  "basic": {
+    "melee1": {
+      "impact": [9],
+      "size": [10, 50],
+      "rel_pos": [30, 0],
+      "damage": 6
+    },
+    "melee2": {
+      "impact": [6],
+      "size": [10, 10],
+      "rel_pos": [30, 5],
+      "damage": 3
+    }
+  }
+}

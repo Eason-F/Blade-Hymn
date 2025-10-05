@@ -1,6 +1,6 @@
 from constants import *
 
-class AllSprites(pygame.sprite.Group):
+class CameraLockedSprites(pygame.sprite.Group):
     def __init__(self):
         super().__init__()
         self.offset = vector(100,0)

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="49" height="28" tilewidth="16" tileheight="16" infinite="0" nextlayerid="13" nextobjectid="8">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="49" height="28" tilewidth="16" tileheight="16" infinite="0" nextlayerid="13" nextobjectid="11">
  <tileset firstgid="1" source="../tsx/spring.tsx"/>
- <tileset firstgid="49" source="../tsx/player.tsx"/>
- <tileset firstgid="50" source="../tsx/spring_bg.tsx"/>
+ <tileset firstgid="49" source="../tsx/spring_bg.tsx"/>
+ <tileset firstgid="53" source="../tsx/player.tsx"/>
  <objectgroup id="12" name="background" visible="0">
-  <object id="2" gid="50" x="0" y="448" width="576" height="324"/>
-  <object id="5" gid="51" x="0" y="448" width="576" height="324"/>
-  <object id="6" gid="52" x="0" y="448" width="576" height="324"/>
-  <object id="7" gid="53" x="0" y="448" width="576" height="324"/>
+  <object id="2" gid="49" x="0" y="448" width="576" height="324"/>
+  <object id="5" gid="50" x="0" y="448" width="576" height="324"/>
+  <object id="6" gid="51" x="0" y="448" width="576" height="324"/>
+  <object id="7" gid="52" x="0" y="448" width="576" height="324"/>
  </objectgroup>
  <layer id="1" name="ground" width="49" height="28">
   <data encoding="csv">
@@ -42,6 +42,7 @@
 </data>
  </layer>
  <objectgroup id="7" name="objects">
-  <object id="1" name="player" gid="49" x="62.0398" y="349.903" width="80" height="80"/>
+  <object id="9" name="player" gid="53" x="68.8686" y="335.576" width="80" height="64"/>
+  <object id="10" name="sbasic" gid="54" x="476.919" y="271.768" width="80" height="64"/>
  </objectgroup>
 </map>
