@@ -12,3 +12,11 @@ class CameraLockedSprites(pygame.sprite.Group):
         for sprite in self:
             offset_pos = sprite.rect.topleft + self.offset
             surface.blit(sprite.image, offset_pos)
+
+class AttackingSprites(pygame.sprite.Group):
+    def __init__(self):
+        super().__init__()
+
+    def update(self):
+        for sprite in self:
+            sprite.update_hitboxes()

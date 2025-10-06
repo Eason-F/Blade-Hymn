@@ -2,60 +2,67 @@
   "player": {
     "melee1": {
       "impact": [3],
-      "size": [30, 40],
-      "rel_pos": [15, 0],
+      "size": [27, 35],
+      "rel_pos": [20, 0],
       "damage": 5,
-      "knockback": 10,
+      "knockback": 3,
       "stun": false
     },
     "melee2": {
       "impact": [2, 4],
-      "size": [30, 40],
-      "rel_pos": [15, 0],
+      "size": [27, 35],
+      "rel_pos": [20, 0],
       "damage": 3,
-      "knockback": 10,
+      "knockback": 1,
       "stun": false
     },
     "melee3": {
       "impact": [8],
-      "size": [30, 40],
-      "rel_pos": [20, 0],
+      "size": [32, 40],
+      "rel_pos": [25, 0],
       "damage": 8,
       "knockback": 15,
       "stun": true
     },
     "air1": {
       "impact": [1],
-      "size": [20, 20],
-      "rel_pos": [15, 0],
+      "size": [30, 22],
+      "rel_pos": [30, 5],
       "damage": 2,
-      "knockback": 2,
+      "knockback": 1,
       "stun": false
     },
     "air2": {
       "impact": [1],
-      "size": [20, 20],
-      "rel_pos": [15, 0],
+      "size": [30, 22],
+      "rel_pos": [30, 5],
       "damage": 1,
-      "knockback": 2,
+      "knockback": 1,
       "stun": false
     }
   },
   "sbasic": {
+    "contact" : {
+      "size": [15, 20],
+      "rel_pos": [0, 0],
+      "damage": 4,
+      "knockback": 3,
+      "stun": true
+    },
     "melee1": {
       "impact": [9],
       "size": [40, 50],
       "rel_pos": [25, 0],
-      "damage": 6,
-      "knockback": 0.2,
+      "damage": 7,
+      "knockback": 2,
       "stun": false
     },
     "melee2": {
       "impact": [6],
-      "size": [40, 10],
+      "size": [30, 10],
       "rel_pos": [25, 5],
-      "damage": 3,
-      "knockback": 2,
+      "damage": 12,
+      "knockback": 5,
       "stun": true
     }
   }

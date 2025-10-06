@@ -9,7 +9,7 @@ class Sprite(pygame.sprite.Sprite):
         self.prev_rect = self.rect.copy()
 
 class Hitbox(Sprite):
-    def __init__(self, pos, direction, data, groups = None, colour = 'red'):
+    def __init__(self, tag, pos, direction, data, groups = None, colour = 'red'):
         surf = pygame.Surface(data['size'])
         surf.fill(colour)
 
@@ -19,6 +19,8 @@ class Hitbox(Sprite):
         self.rect = self.image.get_frect(center=pos)
         self.prev_rect = self.rect.copy()
 
+        self.tag = tag
+        self.direction = direction
         self.damage = data['damage']
         self.knockback = data['knockback']
         self.stun = data['stun']

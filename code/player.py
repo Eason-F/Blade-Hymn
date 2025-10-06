@@ -4,7 +4,7 @@ from timer import Timer
 from sprite import Hitbox
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos, groups, collision_sprites, attack_sprites, enemy_sprites, frames, attack_data):
+    def __init__(self, pos, groups, collision_sprites, damage_sprites, frames, attack_data):
         super().__init__(groups)
 
         # animation
@@ -49,8 +49,7 @@ class Player(pygame.sprite.Sprite):
         # collisions
         self.collision_sprites = collision_sprites
 
-        self.attack_sprites = attack_sprites
-        self.enemy_sprites = enemy_sprites
+        self.damage_sprites = damage_sprites
 
         self.colliding = {
             "ground": False,
@@ -60,8 +59,11 @@ class Player(pygame.sprite.Sprite):
         # timers
         self.timers = {
             "stun_recovery": Timer(1000, sustained=True),
+            "knocked_back": Timer(300, sustained=True),
+            "hit_cooldown": Timer(500, sustained=True),
             "dash": Timer(1500, auto_start=True, repeat=True),
-            "dash_cooldown": Timer(250, sustained=True),
+            "dash_cooldown": Timer(300, sustained=True),
+            "dash_invulnerability": Timer(700, sustained=True),
             "attack_combo": Timer(200),
             "attack": Timer(200, sustained=True)
         }
@@ -109,6 +111,7 @@ class Player(pygame.sprite.Sprite):
 
             self.dash_count -= 1
             self.timers["dash_cooldown"].activate()
+            self.timers["dash_invulnerability"].activate()
         return speed
 
     # attacking
@@ -149,19 +152,6 @@ class Player(pygame.sprite.Sprite):
             if self.state in ['jump', 'fall']: # prevent continous air attacks
                 self.can_air_atk = False
 
-    def handle_hitboxes(self):
-        if self.is_attacking:
-            if int(self.frame_index) + 1 in self.attack_data[self.state]["impact"]:
-                self.timers["attack"].activate()
-        else:
-            self.timers["attack"].deactivate()
-
-        if self.timers["attack"].active:
-            Hitbox(self.hitbox_rect.center,
-                   self.direction,
-                   self.attack_data[self.state],
-                   self.attack_sprites)
-
     # movement related actions
     def move(self, dt):
         if 'melee' in self.state: # give slight horizontal boost when attacking
@@ -198,11 +188,11 @@ class Player(pygame.sprite.Sprite):
     def check_collisions(self):
         ground_rect = pygame.FRect(self.hitbox_rect.bottomleft, (self.hitbox_rect.width, 2))
         collide_rects = [sprite.rect for sprite in self.collision_sprites]
-        damage_rects = [sprite.rect for sprite in self.enemy_sprites]
+        damage_rects = [sprite for sprite in self.damage_sprites if sprite.tag == 'enemy']
 
         self.colliding["ground"] = True if ground_rect.collidelist(collide_rects) >= 0 else False
 
-        self.damaging_hitbox = self.hitbox_rect.collideobjects(damage_rects)
+        self.damaging_hitbox = self.hitbox_rect.collideobjects(damage_rects, key=lambda x: x.rect)
         self.colliding["hitbox"] = True if self.damaging_hitbox else False
 
     def surface_collisions(self, axis):
@@ -232,16 +222,22 @@ class Player(pygame.sprite.Sprite):
         self.camera_rect.y += (self.hitbox_rect.y - self.camera_rect.y) * camera_speed
 
     # combat
+    def knock_back(self, direction, force):
+        self.velocity.y = -10
+        self.velocity.x = direction * force
+
+        self.is_attacking = False
+        self.attack_combo = False
+
+        self.timers["knocked_back"].activate()
+
     def knock_down(self, direction, force = 5):
         if not self.knocked_down:
             self.knocked_down = True
             self.control_lock = True
 
-            self.is_attacking = False
-            self.attack_combo = False
-
+            self.knock_back(direction, force)
             self.velocity.y = -50
-            self.velocity.x = direction * force
 
     def handle_knockdown(self):
         if self.colliding["ground"]:
@@ -254,11 +250,19 @@ class Player(pygame.sprite.Sprite):
         if self.timers["stun_recovery"].active:
             self.control_lock = True
 
+        if self.timers["knocked_back"].active:
+            self.control_lock = True
+
     def check_damage(self):
-        print(self.enemy_sprites)
-        if self.colliding["hitbox"]:
-            if self.damaging_hitbox.stun:
-                self.knock_down(-self.direction, force=self.damaging_hitbox.knockback)
+        self.vulnerable = not (self.timers["hit_cooldown"].active or self.timers["dash_invulnerability"].active)
+
+        if self.vulnerable:
+            if self.colliding["hitbox"]:
+                self.timers["hit_cooldown"].activate()
+                if self.damaging_hitbox.stun:
+                    self.knock_down(self.damaging_hitbox.direction, self.damaging_hitbox.knockback)
+                else:
+                    self.knock_back(self.damaging_hitbox.direction, self.damaging_hitbox.knockback)
 
     # animations
     def animate(self, dt):
@@ -289,6 +293,20 @@ class Player(pygame.sprite.Sprite):
         for timer in self.timers.values():
             timer.update()
 
+    def update_hitboxes(self):
+        if 'melee' in self.state or 'air' in self.state:
+            if int(self.frame_index) + 1 in self.attack_data[self.state]["impact"]:
+                self.timers["attack"].activate()
+        else:
+            self.timers["attack"].deactivate()
+
+        if self.timers["attack"].active:
+            Hitbox('player',
+                   self.hitbox_rect.center,
+                   self.direction,
+                   self.attack_data[self.state],
+                   self.damage_sprites)
+
     def update(self, dt):
         self.prev_rect = self.hitbox_rect.copy()
         self.update_timers()
@@ -302,5 +320,3 @@ class Player(pygame.sprite.Sprite):
 
         self.get_state()
         self.animate(dt)
-
-        self.handle_hitboxes()
