@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="49" height="28" tilewidth="16" tileheight="16" infinite="0" nextlayerid="13" nextobjectid="11">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="49" height="28" tilewidth="16" tileheight="16" infinite="0" nextlayerid="13" nextobjectid="13">
  <tileset firstgid="1" source="../tsx/spring.tsx"/>
  <tileset firstgid="49" source="../tsx/spring_bg.tsx"/>
  <tileset firstgid="53" source="../tsx/player.tsx"/>
@@ -43,6 +43,6 @@
  </layer>
  <objectgroup id="7" name="objects">
   <object id="9" name="player" gid="53" x="68.8686" y="335.576" width="80" height="64"/>
-  <object id="10" name="sbasic" gid="54" x="476.919" y="271.768" width="80" height="64"/>
+  <object id="12" name="sbasic" gid="56" x="499.22" y="277.106" width="96" height="80"/>
  </objectgroup>
 </map>

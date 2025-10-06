@@ -1,5 +1,5 @@
 import os, sys
-import time, math, random
+import math, random
 
 import pygame
 from pygame.math import Vector2 as vector

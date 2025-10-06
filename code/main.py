@@ -27,7 +27,9 @@ class Game:
         self.current_level = Level(self.tmx_data[0], self.level_frames, self.player_frames, self.attack_impact_frames)
 
     def import_assets(self):
-        self.level_frames = {}
+        self.level_frames = {
+            "sbasic": import_subfolders("assets", "graphics", "enemies", "sbasic")
+        }
         self.player_frames = import_subfolders("assets", "graphics", "player")
 
         with open(os.path.join(abs_path, "data", "json", "attack_data.json")) as jsonf:

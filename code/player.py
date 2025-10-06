@@ -4,7 +4,7 @@ from timer import Timer
 from sprite import Hitbox
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos, groups, collision_sprites, attack_sprites, enemy_sprites, frames, attack_impact_frames):
+    def __init__(self, pos, groups, collision_sprites, attack_sprites, enemy_sprites, frames, attack_data):
         super().__init__(groups)
 
         # animation
@@ -35,15 +35,16 @@ class Player(pygame.sprite.Sprite):
         self.control_lock = False
 
         # attack
-        self.attack_data = attack_impact_frames
+        self.attack_data = attack_data
         self.is_attacking = self.attack_combo = False
         self.attack_stage, self.attack_stage_count = -1, 3
         self.can_air_atk = True
-        self.can_air_boost = True
+        self.can_atk_boost = True
 
         # combat
         self.knocked_down = False
         self.vulnerable = True
+        self.damaging_hitbox = None
 
         # collisions
         self.collision_sprites = collision_sprites
@@ -73,7 +74,7 @@ class Player(pygame.sprite.Sprite):
             self.knock_down(-self.direction)
 
         if not self.control_lock:
-            if not ("melee" in self.state and self.is_attacking):
+            if not ("melee" in self.state and self.attack_combo):
                 if keys[pygame.K_LEFT]:
                     movement_vect.x -= self.acceleration
                     self.direction = -1
@@ -88,18 +89,15 @@ class Player(pygame.sprite.Sprite):
 
             self.velocity.x += movement_vect.x * dt
 
-            if self.colliding["ground"]:
-                self.can_air_atk = True
-
-            if keys[pygame.K_x]:
-                if self.colliding["ground"] or self.can_air_atk:
+            if self.colliding["ground"] or self.can_air_atk:
+                if keys[pygame.K_x]:
                     self.attack()
             self.attack_update()
 
-            if not self.is_attacking:
+            if not self.attack_combo and self.colliding["ground"]:
                 if keys[pygame.K_SPACE]:
-                    if self.colliding["ground"]:
-                        self.is_jumping = True
+                    self.is_jumping = True
+                    self.can_air_atk = True
         else:
             if keys[pygame.K_SPACE]:
                 self.timers["stun_recovery"].deactivate()
@@ -118,7 +116,7 @@ class Player(pygame.sprite.Sprite):
         if not self.is_attacking:
             self.attack_stage = (self.attack_stage + 1) % self.attack_stage_count
             self.frame_index = 0
-            self.can_air_boost = True
+            self.can_atk_boost = True
             self.timers["dash_cooldown"].deactivate() # prevent dash cooldown while attacking
 
         self.is_attacking = True
@@ -130,6 +128,9 @@ class Player(pygame.sprite.Sprite):
             self.attack_stage_count = 3
         else:
             self.attack_stage_count = 2
+
+        if self.colliding["ground"]:
+            self.can_air_atk = False
 
         if 'melee' in self.state or 'air' in self.state:
             if self.frame_index >= len(self.frames[self.state]):
@@ -157,14 +158,17 @@ class Player(pygame.sprite.Sprite):
 
         if self.timers["attack"].active:
             Hitbox(self.hitbox_rect.center,
-                   self.attack_data[self.state]["rel_pos"],
-                   self.attack_data[self.state]["size"],
                    self.direction,
-                   self.attack_data[self.state]["damage"],
+                   self.attack_data[self.state],
                    self.attack_sprites)
 
     # movement related actions
     def move(self, dt):
+        if 'melee' in self.state: # give slight horizontal boost when attacking
+            if self.can_atk_boost:
+                self.velocity.x = self.direction / 4
+                self.can_atk_boost = False
+
         friction_factor = self.friction * -self.velocity.x
         self.velocity.x += friction_factor / 2 * dt
         self.hitbox_rect.x += self.velocity.x * self.speed * dt
@@ -172,9 +176,9 @@ class Player(pygame.sprite.Sprite):
         self.surface_collisions('x')
 
         if 'air' in self.state: # give slight vertical boost when air attacking
-            if self.can_air_boost:
+            if self.can_atk_boost:
                 self.velocity.y = -self.jump_height / 1.7
-                self.can_air_boost = False
+                self.can_atk_boost = False
 
         self.velocity.y += self.gravity / 2 * dt
         self.hitbox_rect.y += self.velocity.y * dt
@@ -192,10 +196,14 @@ class Player(pygame.sprite.Sprite):
         self.move_camera()
 
     def check_collisions(self):
-        ground_rect = pygame.Rect(self.hitbox_rect.bottomleft, (self.hitbox_rect.width, 2))
+        ground_rect = pygame.FRect(self.hitbox_rect.bottomleft, (self.hitbox_rect.width, 2))
         collide_rects = [sprite.rect for sprite in self.collision_sprites]
+        damage_rects = [sprite.rect for sprite in self.enemy_sprites]
 
         self.colliding["ground"] = True if ground_rect.collidelist(collide_rects) >= 0 else False
+
+        self.damaging_hitbox = self.hitbox_rect.collideobjects(damage_rects)
+        self.colliding["hitbox"] = True if self.damaging_hitbox else False
 
     def surface_collisions(self, axis):
         for sprite in self.collision_sprites:
@@ -219,11 +227,11 @@ class Player(pygame.sprite.Sprite):
                     self.velocity.y = 0
 
     def move_camera(self):
-        camera_speed = math.dist(self.hitbox_rect.center, self.camera_rect.center) / 500
+        camera_speed = math.dist(self.hitbox_rect.center, self.camera_rect.center) ** 2 / 10000
         self.camera_rect.x += (self.hitbox_rect.x - self.camera_rect.x) * camera_speed
         self.camera_rect.y += (self.hitbox_rect.y - self.camera_rect.y) * camera_speed
 
-    # knockdown
+    # combat
     def knock_down(self, direction, force = 5):
         if not self.knocked_down:
             self.knocked_down = True
@@ -246,6 +254,12 @@ class Player(pygame.sprite.Sprite):
         if self.timers["stun_recovery"].active:
             self.control_lock = True
 
+    def check_damage(self):
+        print(self.enemy_sprites)
+        if self.colliding["hitbox"]:
+            if self.damaging_hitbox.stun:
+                self.knock_down(-self.direction, force=self.damaging_hitbox.knockback)
+
     # animations
     def animate(self, dt):
         self.image = self.frames[self.state][int(self.frame_index % len(self.frames[self.state]))]
@@ -259,8 +273,9 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.state = 'idle' if abs(self.velocity.x) < 0.2 else 'run'
         else:
-            if self.is_attacking and self.can_air_atk:
-                self.state = f'air{self.attack_stage + 1}'
+            if self.is_attacking:
+                if self.can_air_atk:
+                    self.state = f'air{self.attack_stage + 1}'
             else:
                 if self.velocity.y > 0:
                     self.state = 'jump'
@@ -279,6 +294,7 @@ class Player(pygame.sprite.Sprite):
         self.update_timers()
 
         self.check_collisions()
+        self.check_damage()
         self.handle_knockdown()
 
         self.input(dt)
