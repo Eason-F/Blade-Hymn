@@ -68,7 +68,7 @@
   },
   "samurai": {
     "contact" : {
-      "size": [20, 25],
+      "size": [20, 40],
       "rel_pos": [0, 0],
       "damage": 4,
       "knockback": 3,
@@ -76,24 +76,24 @@
     },
     "melee1": {
       "impact": [4],
-      "size": [40, 50],
-      "rel_pos": [25, 0],
+      "size": [45, 50],
+      "rel_pos": [28, 0],
       "damage": 10,
       "knockback": 3,
       "stun": false
     },
     "melee2": {
       "impact": [5],
-      "size": [30, 10],
-      "rel_pos": [25, 5],
+      "size": [45, 50],
+      "rel_pos": [28, 0],
       "damage": 12,
-      "knockback": 6,
+      "knockback": 4,
       "stun": false
     },
     "melee3": {
       "impact": [3],
-      "size": [30, 10],
-      "rel_pos": [25, 5],
+      "size": [40, 10],
+      "rel_pos": [30, 15],
       "damage": 7,
       "knockback": 5,
       "stun": true

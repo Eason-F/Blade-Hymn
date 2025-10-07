@@ -67,4 +67,4 @@ class Level:
         self.all_sprites.update(dt)
         self.all_sprites.draw(self.display_surf, self.player.camera_rect.center)
 
-        self.damage_sprites.draw(self.display_surf, self.player.camera_rect.center)
+        # self.damage_sprites.draw(self.display_surf, self.player.camera_rect.center)

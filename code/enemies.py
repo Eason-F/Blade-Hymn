@@ -195,6 +195,7 @@ class Enemy(pygame.sprite.Sprite, ABC):
                 self.knock_down(damaging_hitbox.direction, damaging_hitbox.knockback)
             else:
                 self.knock_back(damaging_hitbox.direction, damaging_hitbox.knockback)
+            self.timers["attack"].deactivate()
             self.counter_attack()
             self.take_damage(damaging_hitbox.damage)
 
@@ -324,10 +325,10 @@ class BossSamurai(Enemy):
 
         self.timers["attack_cooldown"] = Timer(1000, sustained=True)
         self.timers["blocking"] = Timer(3000, sustained=True)
-        self.timers["block_duration"] = Timer(400, sustained=True)
+        self.timers["block_duration"] = Timer(200, sustained=True)
 
     def attack(self):
-        if self.timers["blocking"].active or self.timers["block_duration"].active:
+        if self.timers["blocking"].active:
             self.can_attack = False
             self.is_attacking = True
 
@@ -359,16 +360,17 @@ class BossSamurai(Enemy):
             super().take_damage(damage)
         else:
             self.timers["block_duration"].activate()
+            self.timers["attack_cooldown"].deactivate()
 
     def get_state(self):
-        if self.timers["blocking"].active or self.timers["block_duration"].active:
+        if self.timers["blocking"].active:
             self.state = 'block'
         elif self.stunned:
             self.state = 'hurt'
         elif self.is_attacking:
             self.state = f'melee{self.attack_stage}'
-        else:
-            if self.velocity.x:
+        elif not self.can_attack:
+            if abs(self.velocity.x) > 0.5:
                 self.state = 'walk'
             else:
                 self.state = 'idle'
@@ -380,6 +382,7 @@ class BossSamurai(Enemy):
             check = [int(self.frame_index) + 1 > impact for impact in self.attack_data[self.state]["impact"]]
             if any(check):
                 self.timers["attack"].activate()
+                self.timers["block_duration"].deactivate()
         elif self.timers["block_duration"].active:
             self.timers["attack"].activate()
             self.timers["blocking"].deactivate()
