@@ -28,7 +28,11 @@ class Game:
 
     def import_assets(self):
         self.level_frames = {
-            "sbasic": import_subfolders("assets", "graphics", "enemies", "sbasic")
+            "sbasic": import_subfolders("assets", "graphics", "enemies", "sbasic"),
+            "wbasic": import_subfolders("assets", "graphics", "enemies", "wbasic"),
+            "dbasic": import_subfolders("assets", "graphics", "enemies", "dbasic"),
+            "samurai": import_subfolders("assets", "graphics", "enemies", "bossSamurai"),
+            "archer": import_subfolders("assets", "graphics", "enemies", "bossArcher"),
         }
         self.player_frames = import_subfolders("assets", "graphics", "player")
 

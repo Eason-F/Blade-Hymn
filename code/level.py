@@ -1,12 +1,14 @@
 from constants import *
 from sprite import Sprite
 from player import Player
-from enemies import SpringBasic
+from enemies import BasicSwordsman, BossSamurai
 from groups import CameraLockedSprites, AttackingSprites
 
 class Level:
     def __init__(self, tmx_map, level_frames, player_frames, attack_impact_frames):
         self.display_surf = MASTER_DISPLAY
+
+        # general
         self.player = None
 
         # groups
@@ -32,9 +34,21 @@ class Level:
                     frames = player_frames,
                     attack_data= attack_impact_frames["player"]
                 )
-            if obj.name == "sbasic":
-                SpringBasic(
+            elif obj.name in ["sbasic", "dbasic", "cbasic"]:
+                BasicSwordsman(
                     pos = (obj.x, obj.y),
+                    hp = obj.hp,
+                    groups = (self.all_sprites, self.attacking_sprites, self.damage_sprites),
+                    collision_sprites = self.collision_sprites,
+                    damage_sprites = self.damage_sprites,
+                    player = self.player,
+                    frames = level_frames[obj.name],
+                    attack_data = attack_impact_frames[obj.name]
+                )
+            elif obj.name == 'samurai':
+                BossSamurai(
+                    pos = (obj.x, obj.y),
+                    hp = obj.hp,
                     groups = (self.all_sprites, self.attacking_sprites, self.damage_sprites),
                     collision_sprites = self.collision_sprites,
                     damage_sprites = self.damage_sprites,
@@ -45,7 +59,7 @@ class Level:
 
 
     def run(self, dt):
-        self.display_surf.fill('black')
+        self.display_surf.fill('light blue')
 
         self.damage_sprites.empty()
         self.attacking_sprites.update()

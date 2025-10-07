@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.10" tiledversion="1.11.2" name="spring" tilewidth="16" tileheight="16" tilecount="48" columns="12">
- <image source="../../../../../../Home/Art/Pixel Art/Blade Hymn/spring.png" width="192" height="64"/>
+ <image source="../../assets/graphics/ground/tile sets/spring.png" width="192" height="64"/>
  <wangsets>
   <wangset name="Unnamed Set" type="mixed" tile="-1">
    <wangcolor name="dirt" color="#ff0000" tile="-1" probability="1"/>

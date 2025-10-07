@@ -4,8 +4,8 @@
       "impact": [3],
       "size": [27, 35],
       "rel_pos": [20, 0],
-      "damage": 5,
-      "knockback": 3,
+      "damage": 999,
+      "knockback": 1,
       "stun": false
     },
     "melee2": {
@@ -63,6 +63,46 @@
       "rel_pos": [25, 5],
       "damage": 12,
       "knockback": 5,
+      "stun": true
+    }
+  },
+  "samurai": {
+    "contact" : {
+      "size": [20, 25],
+      "rel_pos": [0, 0],
+      "damage": 4,
+      "knockback": 3,
+      "stun": true
+    },
+    "melee1": {
+      "impact": [4],
+      "size": [40, 50],
+      "rel_pos": [25, 0],
+      "damage": 10,
+      "knockback": 3,
+      "stun": false
+    },
+    "melee2": {
+      "impact": [5],
+      "size": [30, 10],
+      "rel_pos": [25, 5],
+      "damage": 12,
+      "knockback": 6,
+      "stun": false
+    },
+    "melee3": {
+      "impact": [3],
+      "size": [30, 10],
+      "rel_pos": [25, 5],
+      "damage": 7,
+      "knockback": 5,
+      "stun": true
+    },
+    "block": {
+      "size": [70, 30],
+      "rel_pos": [10, 0],
+      "damage": 4,
+      "knockback": 2,
       "stun": true
     }
   }

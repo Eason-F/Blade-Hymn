@@ -7,7 +7,7 @@ from sprite import Hitbox
 
 
 class Enemy(pygame.sprite.Sprite, ABC):
-    def __init__(self, pos, groups, collision_sprites, damage_sprites, player, frames, attack_data):
+    def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data):
         super().__init__(groups)
         self.player = player
         self.player_pos = player.hitbox_rect.center
@@ -23,7 +23,8 @@ class Enemy(pygame.sprite.Sprite, ABC):
             "attack": Timer(200, sustained=True),
             "stun_recovery": Timer(1000, sustained=True),
             "knocked_back": Timer(700, sustained=True),
-            "hit_cooldown": Timer(200, sustained=True),
+            "hit_cooldown": Timer(250, sustained=True),
+            "fallen": Timer(2000, sustained=True),
         }
 
         # hitbox rect
@@ -47,6 +48,7 @@ class Enemy(pygame.sprite.Sprite, ABC):
         self.damage_sprites = damage_sprites
 
         # combat
+        self.hp = hp
         self.player_found = False
         self.can_attack = False
         self.is_attacking = False
@@ -60,7 +62,18 @@ class Enemy(pygame.sprite.Sprite, ABC):
         self.sight_range = None
         self.attack_range = None
 
+    # movement
     def move(self, dt):
+        if not self.timers["knocked_back"].active:
+            self.velocity.x = 0
+
+            if self.player_found and not self.stunned:
+                if not self.is_attacking:
+                    self.direction = 1 if self.player_pos[0] > self.hitbox_rect.center[0] else -1
+
+                if not self.can_attack:
+                    self.velocity.x = self.direction * self.speed
+
         # prevent enemies from falling off ledge
         if not self.collisions["right_edge"]:
             if self.velocity.x > 0:
@@ -117,20 +130,40 @@ class Enemy(pygame.sprite.Sprite, ABC):
         self.collisions["left_edge"] = True if floor_rect_left.collidelist(collide_rects) >= 0 else False
 
     def find_player(self):
-        player_dist = math.dist((self.hitbox_rect.center[0], 0), (self.player_pos[0], 0))
-        if player_dist < self.sight_range:
+        player_dist_x = abs(self.hitbox_rect.center[0] - self.player_pos[0])
+        player_dist_y = abs(self.hitbox_rect.center[1] - self.player_pos[1])
+        if player_dist_x < self.sight_range and player_dist_y < 50:
             self.player_found = True
         else:
             self.player_found = False
 
-        if player_dist < self.attack_range:
+        if player_dist_x < self.attack_range:
             self.can_attack = True
         else:
             if not self.is_attacking:
                 self.can_attack = False
                 self.attack_stage = random.choice(self.attack_choice)
 
+    # animation
+    @abstractmethod
+    def get_state(self):
+        if self.timers["fallen"].active:
+            self.state = 'fallen'
+
+    def animate(self, dt):
+        self.image = self.frames[self.state][int(self.frame_index % len(self.frames[self.state]))]
+        self.image = self.image if self.direction > 0 else pygame.transform.flip(self.image, True, False)
+        self.frame_index += ANIMATION_SPEED * dt
+
     # combat
+    @abstractmethod
+    def attack(self):
+        pass
+
+    @abstractmethod
+    def counter_attack(self):
+        pass
+
     def knock_back(self, direction, force):
         self.velocity.x = direction * force
 
@@ -156,19 +189,27 @@ class Enemy(pygame.sprite.Sprite, ABC):
         damaging_hitbox = self.hitbox_rect.collideobjects(damage_rects, key=lambda x: x.rect)
         is_hit = True if damaging_hitbox else False
 
-        if is_hit and not self.timers["hit_cooldown"].active:
+        if is_hit and not self.timers["hit_cooldown"].active and not self.hp <= 0:
             self.timers["hit_cooldown"].activate()
             if damaging_hitbox.stun:
                 self.knock_down(damaging_hitbox.direction, damaging_hitbox.knockback)
             else:
                 self.knock_back(damaging_hitbox.direction, damaging_hitbox.knockback)
-            self.attack_choice = [1, 2]
-    
-    def animate(self, dt):
-        self.image = self.frames[self.state][int(self.frame_index % len(self.frames[self.state]))]
-        self.image = self.image if self.direction > 0 else pygame.transform.flip(self.image, True, False)
-        self.frame_index += ANIMATION_SPEED * dt
+            self.counter_attack()
+            self.take_damage(damaging_hitbox.damage)
 
+        if self.state == 'fallen' and self.frame_index >= len(self.frames[self.state]) - 1:
+            if not self.timers["fallen"].active:
+                self.kill()
+            self.frame_index = len(self.frames[self.state]) - 1
+
+    def take_damage(self, damage):
+        self.hp -= damage
+        if self.hp <= 0 and not self.timers["fallen"].active:
+            self.frame_index = 0
+            self.timers["fallen"].activate()
+
+    # update
     def update_timers(self):
         for timer in self.timers.values():
             timer.update()
@@ -198,20 +239,18 @@ class Enemy(pygame.sprite.Sprite, ABC):
         self.check_damage()
         self.handle_knockdown()
 
-    @abstractmethod
-    def attack(self):
-        pass
+        self.find_player()
+        self.move(dt)
+        self.attack()
 
-    @abstractmethod
-    def get_state(self):
-        pass
+        self.get_state()
+        self.animate(dt)
 
+class BasicSwordsman(Enemy):
+    def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data):
+        super().__init__(pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data)
 
-class SpringBasic(Enemy):
-    def __init__(self, pos, groups, collision_sprites, damage_sprites, player, frames, attack_data):
-        super().__init__(pos, groups, collision_sprites, damage_sprites, player, frames, attack_data)
-
-        self.hitbox_rect = self.rect.inflate(-84, -41)
+        self.hitbox_rect = self.rect.inflate(-84, -42)
         self.prev_rect = self.hitbox_rect.copy()
 
         self.speed = 25
@@ -221,19 +260,6 @@ class SpringBasic(Enemy):
         self.player_found = False
         self.can_attack = False
         self.attack_choice = [1, 1, 1, 2]
-
-    def move(self, dt):
-        if not self.timers["knocked_back"].active:
-            self.velocity.x = 0
-
-            if self.player_found and not self.stunned:
-                if not self.is_attacking:
-                    self.direction = 1 if self.player_pos[0] > self.hitbox_rect.center[0] else -1
-
-                if not self.can_attack:
-                    self.velocity.x = self.direction * self.speed
-
-        super().move(dt)
 
     def attack(self):
         if self.can_attack and not self.timers["attack_cooldown"].active:
@@ -252,10 +278,13 @@ class SpringBasic(Enemy):
                     self.attack_stage += 1
                     self.attack_combo = True
                 else:
-                    self.timers['attack_cooldown'].activate()
+                    self.timers["attack_cooldown"].activate()
                     self.attack_combo = False
                     self.attack_choice = [1, 1, 1, 2]
                     self.attack_stage = random.choice(self.attack_choice)
+
+    def counter_attack(self):
+        self.attack_choice = [1, 2, 2]
 
     def get_state(self):
         if self.is_attacking:
@@ -265,6 +294,7 @@ class SpringBasic(Enemy):
                 self.state = 'walk'
             else:
                 self.state = 'idle'
+        super().get_state()
 
     def update_hitboxes(self):
         if 'melee' in self.state:
@@ -275,12 +305,85 @@ class SpringBasic(Enemy):
 
         super().update_hitboxes()
 
-    def update(self, dt):
-        super().update(dt)
+class BossSamurai(Enemy):
+    def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data):
+        super().__init__(pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data)
 
-        self.find_player()
-        self.move(dt)
-        self.attack()
+        self.hitbox_rect = self.rect.inflate(-80, -52)
+        self.prev_rect = self.hitbox_rect.copy()
 
-        self.get_state()
-        self.animate(dt)
+        self.speed = 30
+        self.sight_range = 300
+        self.attack_range = 50
+
+        self.player_found = False
+        self.can_attack = False
+
+        self.base_attack_choice = [1, 1, 1, 1, 2, 2, 3]
+        self.attack_choice = self.base_attack_choice
+
+        self.timers["attack_cooldown"] = Timer(1000, sustained=True)
+        self.timers["blocking"] = Timer(3000, sustained=True)
+        self.timers["block_duration"] = Timer(400, sustained=True)
+
+    def attack(self):
+        if self.timers["blocking"].active or self.timers["block_duration"].active:
+            self.can_attack = False
+            self.is_attacking = True
+
+        if self.can_attack and not self.timers["attack_cooldown"].active:
+            if not self.is_attacking:
+                if random.randint(0, 3) == 1:
+                    self.timers["blocking"].activate()
+                else:
+                    self.frame_index = 0
+                    self.is_attacking = True
+
+        if 'melee' in self.state:
+            if self.frame_index >= len(self.frames[self.state]):
+                self.is_attacking = False
+
+                self.timers["attack_cooldown"].activate()
+                self.attack_combo = False
+                self.attack_choice = self.base_attack_choice
+                self.attack_stage = random.choice(self.attack_choice)
+
+
+    def counter_attack(self):
+        if random.randint(0, 2) == 1:
+            self.attack_stage = 3
+            self.timers["attack_cooldown"].deactivate()
+
+    def take_damage(self, damage):
+        if not self.timers["blocking"].active:
+            super().take_damage(damage)
+        else:
+            self.timers["block_duration"].activate()
+
+    def get_state(self):
+        if self.timers["blocking"].active or self.timers["block_duration"].active:
+            self.state = 'block'
+        elif self.stunned:
+            self.state = 'hurt'
+        elif self.is_attacking:
+            self.state = f'melee{self.attack_stage}'
+        else:
+            if self.velocity.x:
+                self.state = 'walk'
+            else:
+                self.state = 'idle'
+
+        super().get_state()
+
+    def update_hitboxes(self):
+        if 'melee' in self.state:
+            check = [int(self.frame_index) + 1 > impact for impact in self.attack_data[self.state]["impact"]]
+            if any(check):
+                self.timers["attack"].activate()
+        elif self.timers["block_duration"].active:
+            self.timers["attack"].activate()
+            self.timers["blocking"].deactivate()
+        else:
+            self.timers["attack"].deactivate()
+
+        super().update_hitboxes()

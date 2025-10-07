@@ -18,5 +18,7 @@ class AttackingSprites(pygame.sprite.Group):
         super().__init__()
 
     def update(self):
-        for sprite in self:
-            sprite.update_hitboxes()
+        freeze_frame = [sprite.update_hitboxes() for sprite in self]
+        if any(freeze_frame):
+            return True
+        return False
