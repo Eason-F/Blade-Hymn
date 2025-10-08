@@ -131,17 +131,16 @@ class Enemy(pygame.sprite.Sprite, ABC):
     def find_player(self):
         player_dist_x = abs(self.hitbox_rect.center[0] - self.player_pos[0])
         player_dist_y = abs(self.hitbox_rect.center[1] - self.player_pos[1])
-        if player_dist_x < self.sight_range and player_dist_y < 50:
+        if player_dist_x <= self.sight_range and player_dist_y <= 80:
             self.player_found = True
         else:
             self.player_found = False
 
-        if player_dist_x < self.attack_range:
+        if player_dist_x <= self.attack_range:
             self.can_attack = True
-        else:
-            if not self.is_attacking:
-                self.can_attack = False
-                self.attack_stage = random.choice(self.attack_choice)
+        elif not self.is_attacking:
+            self.can_attack = False
+            self.attack_stage = random.choice(self.attack_choice)
 
     # animation
     @abstractmethod
@@ -417,7 +416,7 @@ class BossArcher(Enemy):
         self.max_shoot_range, self.min_shoot_range = 350, 150
         self.attack_range = 50
 
-        self.max_combo_length = 3
+        self.max_combo_length = 2
         self.combo_length = 0
 
         self.can_shoot = False
@@ -429,7 +428,7 @@ class BossArcher(Enemy):
         self.attack_choice = self.base_attack_choice
 
         self.timers["attack_cooldown"] = Timer(1600, sustained=True)
-        self.timers["combo_cooldown"] = Timer(400, sustained=True)
+        self.timers["combo_cooldown"] = Timer(200, sustained=True)
 
     def find_player(self):
         super().find_player()
@@ -444,15 +443,12 @@ class BossArcher(Enemy):
             self.velocity.x = self.direction * self.speed
 
     def attack(self):
-        print(self.timers["attack_cooldown"].active)
         if self.ammo <= 0:
             self.can_shoot = False
-        if not self.can_attack:
-            self.combo_length = 0
 
         if not (self.timers["attack_cooldown"].active or self.timers["combo_cooldown"].active):
             if self.can_shoot:
-                if not self.is_shooting:
+                if not self.is_shooting and not self.is_attacking:
                     self.frame_index = 0
                     self.is_shooting = True
                     self.is_attacking = False
@@ -462,10 +458,11 @@ class BossArcher(Enemy):
                     self.frame_index = 0
                     self.is_attacking = True
                     self.is_shooting = False
-
+                    self.combo_length += 1
                     self.direction = 1 if self.player_pos[0] > self.hitbox_rect.center[0] else -1
 
             if self.frame_index >= len(self.frames[self.state]):
+                self.frame_index = 0
                 if self.state == 'shoot' or 'melee' in self.state:
                     self.timers["attack_cooldown"].activate()
 
@@ -482,33 +479,30 @@ class BossArcher(Enemy):
                     self.ammo -= 1
 
     def chain_attacks(self):
-        if random.randint(0, 2) == 1:
-            if self.combo_length < self.max_combo_length:
-                self.combo_length += 1
-                self.attack_choice = [1, 2]
-                self.timers["attack_cooldown"].deactivate()
-                self.timers["combo_cooldown"].activate()
+        if self.combo_length < self.max_combo_length and random.randint(0, 1) == 1:
+            self.attack_choice = [1, 2]
+            self.timers["attack_cooldown"].deactivate()
+            self.timers["combo_cooldown"].activate()
         else:
             self.combo_length = 0
-            if random.randint(0, 2) == 1:
+            if random.randint(0, 1) == 1:
                 self.attack_choice = [3]
 
     def counter_attack(self):
-        if random.randint(0, 4) == 1:
+        if random.randint(0, 3) == 1:
             self.attack_stage = random.choice([2, 2, 3])
             self.ammo = self.ammo + 1 if self.ammo < self.max_ammo else self.ammo
             self.timers["attack_cooldown"].deactivate()
-            self.timers['combo_cooldown'].activate()
-            self.is_attacking = False
+            self.frame_index = 3
 
     def get_state(self):
         if self.stunned:
             self.state = 'hurt'
-        elif self.is_attacking:
+        elif self.is_attacking and self.can_attack:
             self.state = f'melee{self.attack_stage}'
         elif self.is_shooting:
             self.state = 'shoot'
-        elif not self.can_attack:
+        else:
             if abs(self.velocity.x) > 0.5:
                 self.state = 'walk'
             else:

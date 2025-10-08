@@ -9,6 +9,19 @@ class Sprite(pygame.sprite.Sprite):
         self.rect = self.image.get_frect(topleft=pos)
         self.prev_rect = self.rect.copy()
 
+class AnimatedSprite(Sprite):
+    def __init__(self, pos, frames, groups = None):
+        super().__init__(pos, frames[0], groups)
+        self.frames = frames
+        self.frame_index = 0
+
+        self.image = self.frames[int(self.frame_index) % len(self.frames)]
+
+    def update(self, dt):
+        self.prev_rect = self.rect.copy()
+        self.frame_index += dt * ANIMATION_SPEED
+        self.image = self.frames[int(self.frame_index) % len(self.frames)]
+
 class Hitbox(Sprite):
     def __init__(self, tag, pos, direction, data, groups = None, colour = 'red'):
         surf = pygame.Surface(data['size'])
@@ -26,7 +39,7 @@ class Hitbox(Sprite):
         self.knockback = data['knockback']
         self.stun = data['stun']
 
-        self.visible = True
+        self.visible = False
         self.sustained = False
 
 class Projectile(Hitbox):

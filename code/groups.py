@@ -15,6 +15,14 @@ class CameraLockedSprites(pygame.sprite.Group):
             offset_pos = sprite.rect.topleft + self.offset
             surface.blit(sprite.image, offset_pos)
 
+class UISprites(pygame.sprite.Group):
+    def __init__(self):
+        super().__init__()
+
+    def draw(self, surface):
+        for sprite in [sprite for sprite in self if sprite.visible]:
+            surface.blit(sprite.image, sprite.rect.topleft)
+
 class HitboxSprites(CameraLockedSprites):
     def __init__(self):
         super().__init__()

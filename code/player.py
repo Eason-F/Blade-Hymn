@@ -30,7 +30,7 @@ class Player(pygame.sprite.Sprite):
         self.jump_height = 300
 
         self.dash_distance = self.acceleration * 20
-        self.max_dash_count = 2; self.dash_count = self.max_dash_count
+        self.max_dash_count = 3; self.dash_count = self.max_dash_count
 
         self.control_lock = False
 
@@ -42,6 +42,9 @@ class Player(pygame.sprite.Sprite):
         self.can_atk_boost = True
 
         # combat
+        self.hp = PlAYER_HEALTH
+        self.max_heal = self.heal_count = 6
+        self.heal_amount = 10 + self.hp / 5
         self.knocked_down = False
         self.vulnerable = True
         self.damaging_hitbox = None
@@ -58,14 +61,15 @@ class Player(pygame.sprite.Sprite):
 
         # timers
         self.timers = {
-            "stun_recovery": Timer(1000, sustained=True),
+            "stun_recovery": Timer(1500, sustained=True),
             "knocked_back": Timer(300, sustained=True),
             "hit_cooldown": Timer(400, sustained=True),
-            "dash": Timer(2000, auto_start=True, repeat=True),
+            "dash": Timer(3000, auto_start=True, repeat=True),
             "dash_cooldown": Timer(300, sustained=True),
-            "dash_invulnerability": Timer(700, sustained=True),
+            "dash_invulnerability": Timer(200, sustained=True),
             "attack_combo": Timer(200),
-            "attack": Timer(200, sustained=True)
+            "attack": Timer(200, sustained=True),
+            "heal_cooldown": Timer(1000, sustained=True),
         }
 
     def input(self, dt):
@@ -88,6 +92,8 @@ class Player(pygame.sprite.Sprite):
             if not self.is_attacking:
                 if keys[pygame.K_LSHIFT]:
                     movement_vect.x = self.dash(movement_vect.x)
+                elif keys[pygame.K_r]:
+                    self.heal()
 
             self.velocity.x += movement_vect.x * dt
 
@@ -113,6 +119,12 @@ class Player(pygame.sprite.Sprite):
             self.timers["dash_cooldown"].activate()
             self.timers["dash_invulnerability"].activate()
         return speed
+
+    def heal(self):
+        if not self.timers["heal_cooldown"].active:
+            self.hp = self.hp + self.heal_amount if self.hp + self.heal_amount <= PlAYER_HEALTH else PlAYER_HEALTH
+            self.heal_count -= 1
+            self.timers["heal_cooldown"].activate()
 
     # attacking
     def attack(self):
@@ -262,6 +274,10 @@ class Player(pygame.sprite.Sprite):
                 self.knock_down(self.damaging_hitbox.direction, self.damaging_hitbox.knockback)
             else:
                 self.knock_back(self.damaging_hitbox.direction, self.damaging_hitbox.knockback)
+            self.take_damage(self.damaging_hitbox.damage)
+
+    def take_damage(self, damage):
+        self.hp -= damage
 
     # animations
     def animate(self, dt):
