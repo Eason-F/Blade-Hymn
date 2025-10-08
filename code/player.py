@@ -60,8 +60,8 @@ class Player(pygame.sprite.Sprite):
         self.timers = {
             "stun_recovery": Timer(1000, sustained=True),
             "knocked_back": Timer(300, sustained=True),
-            "hit_cooldown": Timer(500, sustained=True),
-            "dash": Timer(1500, auto_start=True, repeat=True),
+            "hit_cooldown": Timer(400, sustained=True),
+            "dash": Timer(2000, auto_start=True, repeat=True),
             "dash_cooldown": Timer(300, sustained=True),
             "dash_invulnerability": Timer(700, sustained=True),
             "attack_combo": Timer(200),
@@ -256,13 +256,12 @@ class Player(pygame.sprite.Sprite):
     def check_damage(self):
         self.vulnerable = not (self.timers["hit_cooldown"].active or self.timers["dash_invulnerability"].active)
 
-        if self.vulnerable:
-            if self.colliding["hitbox"]:
-                self.timers["hit_cooldown"].activate()
-                if self.damaging_hitbox.stun:
-                    self.knock_down(self.damaging_hitbox.direction, self.damaging_hitbox.knockback)
-                else:
-                    self.knock_back(self.damaging_hitbox.direction, self.damaging_hitbox.knockback)
+        if self.vulnerable and self.colliding["hitbox"]:
+            self.timers["hit_cooldown"].activate()
+            if self.damaging_hitbox.stun:
+                self.knock_down(self.damaging_hitbox.direction, self.damaging_hitbox.knockback)
+            else:
+                self.knock_back(self.damaging_hitbox.direction, self.damaging_hitbox.knockback)
 
     # animations
     def animate(self, dt):
@@ -289,6 +288,14 @@ class Player(pygame.sprite.Sprite):
         if self.timers["dash_cooldown"].active:
             self.state = 'dash'
 
+    def hit_flicker(self):
+        if self.timers["hit_cooldown"].active and math.sin(pygame.time.get_ticks() / 16) >= 0:
+            white_mask = pygame.mask.from_surface(self.image)
+            white_surf = white_mask.to_surface()
+            white_surf.set_colorkey('black')
+            self.image = white_surf
+
+    # updates
     def update_timers(self):
         for timer in self.timers.values():
             timer.update()
@@ -320,3 +327,4 @@ class Player(pygame.sprite.Sprite):
 
         self.get_state()
         self.animate(dt)
+        self.hit_flicker()

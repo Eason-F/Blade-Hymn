@@ -1,8 +1,8 @@
 from constants import *
 from sprite import Sprite
 from player import Player
-from enemies import BasicSwordsman, BossSamurai
-from groups import CameraLockedSprites, AttackingSprites
+from enemies import BasicSwordsman, BossSamurai, BossArcher
+from groups import CameraLockedSprites, AttackingSprites, HitboxSprites
 
 class Level:
     def __init__(self, tmx_map, level_frames, player_frames, attack_impact_frames):
@@ -16,7 +16,7 @@ class Level:
         self.collision_sprites = pygame.sprite.Group()
 
         self.attacking_sprites = AttackingSprites()
-        self.damage_sprites = CameraLockedSprites()
+        self.damage_sprites = HitboxSprites()
 
         self.setup(tmx_map, level_frames, player_frames, attack_impact_frames)
 
@@ -38,7 +38,7 @@ class Level:
                 BasicSwordsman(
                     pos = (obj.x, obj.y),
                     hp = obj.hp,
-                    groups = (self.all_sprites, self.attacking_sprites, self.damage_sprites),
+                    groups = (self.all_sprites, self.attacking_sprites),
                     collision_sprites = self.collision_sprites,
                     damage_sprites = self.damage_sprites,
                     player = self.player,
@@ -49,7 +49,18 @@ class Level:
                 BossSamurai(
                     pos = (obj.x, obj.y),
                     hp = obj.hp,
-                    groups = (self.all_sprites, self.attacking_sprites, self.damage_sprites),
+                    groups = (self.all_sprites, self.attacking_sprites),
+                    collision_sprites = self.collision_sprites,
+                    damage_sprites = self.damage_sprites,
+                    player = self.player,
+                    frames = level_frames[obj.name],
+                    attack_data = attack_impact_frames[obj.name]
+                )
+            elif obj.name == 'archer':
+                BossArcher(
+                    pos = (obj.x, obj.y),
+                    hp = obj.hp,
+                    groups = (self.all_sprites, self.attacking_sprites),
                     collision_sprites = self.collision_sprites,
                     damage_sprites = self.damage_sprites,
                     player = self.player,
@@ -64,7 +75,8 @@ class Level:
         self.damage_sprites.empty()
         self.attacking_sprites.update()
 
+        self.damage_sprites.update(dt)
         self.all_sprites.update(dt)
         self.all_sprites.draw(self.display_surf, self.player.camera_rect.center)
 
-        # self.damage_sprites.draw(self.display_surf, self.player.camera_rect.center)
+        self.damage_sprites.draw(self.display_surf, self.player.camera_rect.center)

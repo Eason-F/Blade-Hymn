@@ -3,15 +3,34 @@ from constants import *
 class CameraLockedSprites(pygame.sprite.Group):
     def __init__(self):
         super().__init__()
-        self.offset = vector(100,0)
+        self.offset = vector(0,0)
 
-    def draw(self, surface, target_pos):
+    def handle_offset(self, target_pos):
         self.offset.x = -(target_pos[0] - GAME_WIDTH / 2)
         self.offset.y = -(target_pos[1] - GAME_HEIGHT / 2)
 
+    def draw(self, surface, target_pos):
+        self.handle_offset(target_pos)
         for sprite in self:
             offset_pos = sprite.rect.topleft + self.offset
             surface.blit(sprite.image, offset_pos)
+
+class HitboxSprites(CameraLockedSprites):
+    def __init__(self):
+        super().__init__()
+
+    def empty(self):
+        for sprite in self.sprites():
+            if not sprite.sustained:
+                self.remove_internal(sprite)
+                sprite.remove_internal(self)
+
+    def draw(self, surface, target_pos):
+        self.handle_offset(target_pos)
+        for sprite in self:
+            if sprite.visible:
+                offset_pos = sprite.rect.topleft + self.offset
+                surface.blit(sprite.image, offset_pos)
 
 class AttackingSprites(pygame.sprite.Group):
     def __init__(self):

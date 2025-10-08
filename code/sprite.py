@@ -1,4 +1,5 @@
 from constants import *
+from timer import Timer
 
 class Sprite(pygame.sprite.Sprite):
     def __init__(self, pos, surf, groups = None):
@@ -24,3 +25,46 @@ class Hitbox(Sprite):
         self.damage = data['damage']
         self.knockback = data['knockback']
         self.stun = data['stun']
+
+        self.visible = True
+        self.sustained = False
+
+class Projectile(Hitbox):
+    def __init__(self, tag, pos, direction, data, image, collision_rects, groups = None):
+        super().__init__(tag, pos, direction, data, groups)
+        self.image = image if self.direction > 0 else pygame.transform.flip(image, True, False)
+        self.rect = self.image.get_frect(center = pos)
+        self.prev_rect = self.rect.copy()
+
+        self.visible = True
+        self.sustained = True
+
+        self.data = data
+        self.velocity = vector(data['velocity'][0] * direction, data['velocity'][1])
+
+        self.collision_rects = collision_rects
+        self.timer = Timer(1000, sustained = True)
+        self.timer.activate()
+
+        self.hitbox = None
+
+    def update(self, dt):
+        self.hitbox = Hitbox(
+            tag = 'enemy',
+            pos = self.rect.center,
+            direction = self.direction,
+            data = self.data,
+            groups = self.groups(),
+            colour = 'blue'
+        )
+
+        self.timer.update()
+        if self.hitbox.rect.collidelist(self.collision_rects) >= 0:
+            self.timer.deactivate()
+
+        if self.timer.active:
+            self.prev_rect = self.rect.copy()
+            self.rect.x += self.velocity.x * dt
+            self.rect.y += self.velocity.y * dt
+        else:
+            self.kill()

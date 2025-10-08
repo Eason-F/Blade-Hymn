@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from constants import *
 
 from timer import Timer
-from sprite import Hitbox
+from sprite import Hitbox, Projectile
 
 
 class Enemy(pygame.sprite.Sprite, ABC):
@@ -53,7 +53,6 @@ class Enemy(pygame.sprite.Sprite, ABC):
         self.can_attack = False
         self.is_attacking = False
         self.attack_stage = 1
-        self.attack_combo = False
         self.attack_choice = None
 
         self.stunned = False
@@ -64,15 +63,11 @@ class Enemy(pygame.sprite.Sprite, ABC):
 
     # movement
     def move(self, dt):
-        if not self.timers["knocked_back"].active:
+        if not self.timers["knocked_back"].active and not self.stunned:
             self.velocity.x = 0
-
-            if self.player_found and not self.stunned:
-                if not self.is_attacking:
-                    self.direction = 1 if self.player_pos[0] > self.hitbox_rect.center[0] else -1
-
-                if not self.can_attack:
-                    self.velocity.x = self.direction * self.speed
+            if self.player_found and not self.is_attacking:
+                self.direction = 1 if self.player_pos[0] > self.hitbox_rect.center[0] else -1
+                self.move_to_player()
 
         # prevent enemies from falling off ledge
         if not self.collisions["right_edge"]:
@@ -99,6 +94,10 @@ class Enemy(pygame.sprite.Sprite, ABC):
         self.surface_collisions('y')
 
         self.rect.center = self.hitbox_rect.center
+
+    def move_to_player(self):
+        if not self.can_attack:
+            self.velocity.x = self.direction * self.speed
 
     def surface_collisions(self, axis):
         for sprite in self.collision_sprites:
@@ -155,6 +154,13 @@ class Enemy(pygame.sprite.Sprite, ABC):
         self.image = self.image if self.direction > 0 else pygame.transform.flip(self.image, True, False)
         self.frame_index += ANIMATION_SPEED * dt
 
+    def hit_flicker(self):
+        if self.timers["hit_cooldown"].active and math.sin(pygame.time.get_ticks() / 32) >= 0:
+            white_mask = pygame.mask.from_surface(self.image)
+            white_surf = white_mask.to_surface()
+            white_surf.set_colorkey('black')
+            self.image = white_surf
+
     # combat
     @abstractmethod
     def attack(self):
@@ -166,7 +172,6 @@ class Enemy(pygame.sprite.Sprite, ABC):
 
     def knock_back(self, direction, force):
         self.velocity.x = direction * force
-
         self.timers["knocked_back"].activate()
 
     def knock_down(self, direction, force=5):
@@ -206,7 +211,7 @@ class Enemy(pygame.sprite.Sprite, ABC):
 
     def take_damage(self, damage):
         self.hp -= damage
-        if self.hp <= 0 and not self.timers["fallen"].active:
+        if self.hp <= 0 and (not self.timers["fallen"].active):
             self.frame_index = 0
             self.timers["fallen"].activate()
 
@@ -240,12 +245,14 @@ class Enemy(pygame.sprite.Sprite, ABC):
         self.check_damage()
         self.handle_knockdown()
 
-        self.find_player()
-        self.move(dt)
-        self.attack()
+        if not self.timers["fallen"].active:
+            self.find_player()
+            self.move(dt)
+            self.attack()
 
         self.get_state()
         self.animate(dt)
+        self.hit_flicker()
 
 class BasicSwordsman(Enemy):
     def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data):
@@ -256,36 +263,47 @@ class BasicSwordsman(Enemy):
 
         self.speed = 25
         self.sight_range = 200
-        self.attack_range = 40
-
-        self.player_found = False
-        self.can_attack = False
+        self.attack_range = 45
         self.attack_choice = [1, 1, 1, 2]
+        self.attack_combo = False
+
+        self.timers["attack_cooldown"] = Timer(1000, sustained=True)
+        self.timers["combo_cooldown"] = Timer(400, sustained=True)
 
     def attack(self):
-        if self.can_attack and not self.timers["attack_cooldown"].active:
+        if self.can_attack and not (self.timers["attack_cooldown"].active or self.timers["combo_cooldown"].active):
             if not self.is_attacking:
                 if not self.attack_combo:
                     self.frame_index = 0
                 else:
                     self.frame_index = 3
+                self.direction = 1 if self.player_pos[0] > self.hitbox_rect.center[0] else -1
             self.is_attacking = True
 
         if 'melee' in self.state:
             if self.frame_index >= len(self.frames[self.state]):
                 self.is_attacking = False
 
+                self.timers["attack_cooldown"].activate()
+                self.timers["combo_cooldown"].deactivate()
+                self.attack_choice = [1, 1, 1, 2]
+
                 if random.randint(0,2) == 1 and self.attack_stage == 1:
-                    self.attack_stage += 1
+                    self.attack_choice = [2]
                     self.attack_combo = True
+                    self.timers["attack_cooldown"].deactivate()
+                    self.timers['combo_cooldown'].activate()
                 else:
-                    self.timers["attack_cooldown"].activate()
                     self.attack_combo = False
-                    self.attack_choice = [1, 1, 1, 2]
-                    self.attack_stage = random.choice(self.attack_choice)
+
+                self.attack_stage = random.choice(self.attack_choice)
 
     def counter_attack(self):
-        self.attack_choice = [1, 2, 2]
+        if random.randint(0, 2) == 1:
+            self.attack_stage = 2
+            self.attack_combo = True
+            self.timers["attack_cooldown"].deactivate()
+            self.timers['combo_cooldown'].activate()
 
     def get_state(self):
         if self.is_attacking:
@@ -317,9 +335,6 @@ class BossSamurai(Enemy):
         self.sight_range = 300
         self.attack_range = 50
 
-        self.player_found = False
-        self.can_attack = False
-
         self.base_attack_choice = [1, 1, 1, 1, 2, 2, 3]
         self.attack_choice = self.base_attack_choice
 
@@ -339,16 +354,15 @@ class BossSamurai(Enemy):
                 else:
                     self.frame_index = 0
                     self.is_attacking = True
+                self.direction = 1 if self.player_pos[0] > self.hitbox_rect.center[0] else -1
 
         if 'melee' in self.state:
             if self.frame_index >= len(self.frames[self.state]):
                 self.is_attacking = False
 
                 self.timers["attack_cooldown"].activate()
-                self.attack_combo = False
                 self.attack_choice = self.base_attack_choice
                 self.attack_stage = random.choice(self.attack_choice)
-
 
     def counter_attack(self):
         if random.randint(0, 2) == 1:
@@ -388,5 +402,140 @@ class BossSamurai(Enemy):
             self.timers["blocking"].deactivate()
         else:
             self.timers["attack"].deactivate()
+
+        super().update_hitboxes()
+
+class BossArcher(Enemy):
+    def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data):
+        super().__init__(pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data)
+
+        self.hitbox_rect = self.rect.inflate(-80, -78)
+        self.prev_rect = self.hitbox_rect.copy()
+
+        self.speed = 30
+        self.sight_range = 300
+        self.max_shoot_range, self.min_shoot_range = 350, 150
+        self.attack_range = 50
+
+        self.max_combo_length = 3
+        self.combo_length = 0
+
+        self.can_shoot = False
+        self.is_shooting = False
+        self.has_shot = True
+        self.max_ammo = self.ammo = 2
+
+        self.base_attack_choice = [1, 1, 1, 2, 2]
+        self.attack_choice = self.base_attack_choice
+
+        self.timers["attack_cooldown"] = Timer(1600, sustained=True)
+        self.timers["combo_cooldown"] = Timer(400, sustained=True)
+
+    def find_player(self):
+        super().find_player()
+        player_dist_x = abs(self.hitbox_rect.center[0] - self.player_pos[0])
+        if self.min_shoot_range < player_dist_x < self.max_shoot_range and self.player_found:
+            self.can_shoot = True
+        else:
+            self.can_shoot = False
+
+    def move_to_player(self):
+        if not (self.can_attack or self.is_shooting):
+            self.velocity.x = self.direction * self.speed
+
+    def attack(self):
+        print(self.timers["attack_cooldown"].active)
+        if self.ammo <= 0:
+            self.can_shoot = False
+        if not self.can_attack:
+            self.combo_length = 0
+
+        if not (self.timers["attack_cooldown"].active or self.timers["combo_cooldown"].active):
+            if self.can_shoot:
+                if not self.is_shooting:
+                    self.frame_index = 0
+                    self.is_shooting = True
+                    self.is_attacking = False
+
+            elif self.can_attack:
+                if not self.is_attacking:
+                    self.frame_index = 0
+                    self.is_attacking = True
+                    self.is_shooting = False
+
+                    self.direction = 1 if self.player_pos[0] > self.hitbox_rect.center[0] else -1
+
+            if self.frame_index >= len(self.frames[self.state]):
+                if self.state == 'shoot' or 'melee' in self.state:
+                    self.timers["attack_cooldown"].activate()
+
+                if 'melee' in self.state:
+                    self.is_attacking = False
+
+                    self.attack_choice = self.base_attack_choice
+                    self.chain_attacks()
+                    self.attack_stage = random.choice(self.attack_choice)
+
+                    self.ammo = self.ammo + 1 if self.ammo < self.max_ammo else self.ammo
+                elif 'shoot' in self.state:
+                    self.is_shooting = False
+                    self.ammo -= 1
+
+    def chain_attacks(self):
+        if random.randint(0, 2) == 1:
+            if self.combo_length < self.max_combo_length:
+                self.combo_length += 1
+                self.attack_choice = [1, 2]
+                self.timers["attack_cooldown"].deactivate()
+                self.timers["combo_cooldown"].activate()
+        else:
+            self.combo_length = 0
+            if random.randint(0, 2) == 1:
+                self.attack_choice = [3]
+
+    def counter_attack(self):
+        if random.randint(0, 4) == 1:
+            self.attack_stage = random.choice([2, 2, 3])
+            self.ammo = self.ammo + 1 if self.ammo < self.max_ammo else self.ammo
+            self.timers["attack_cooldown"].deactivate()
+            self.timers['combo_cooldown'].activate()
+            self.is_attacking = False
+
+    def get_state(self):
+        if self.stunned:
+            self.state = 'hurt'
+        elif self.is_attacking:
+            self.state = f'melee{self.attack_stage}'
+        elif self.is_shooting:
+            self.state = 'shoot'
+        elif not self.can_attack:
+            if abs(self.velocity.x) > 0.5:
+                self.state = 'walk'
+            else:
+                self.state = 'idle'
+        super().get_state()
+
+    def update_hitboxes(self):
+        if 'melee' in self.state:
+            if int(self.frame_index) + 1 in self.attack_data[self.state]["impact"]:
+                self.timers["attack"].activate()
+        elif self.state == "shoot":
+            if int(self.frame_index) + 1 in self.attack_data[self.state]["impact"]:
+                self.has_shot = False
+                self.frame_index += 1
+        else:
+            self.timers["attack"].deactivate()
+
+        if not self.has_shot:
+            self.has_shot = True
+            Projectile(
+                tag = "enemy",
+                pos = self.hitbox_rect.center,
+                direction = self.direction,
+                data = self.attack_data[self.state],
+                image = self.frames["arrow"][0],
+                collision_rects = [sprite.rect for sprite in self.collision_sprites],
+                groups = self.damage_sprites
+            )
 
         super().update_hitboxes()

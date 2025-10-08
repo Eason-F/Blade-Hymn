@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="60" height="40" tilewidth="16" tileheight="16" infinite="0" nextlayerid="13" nextobjectid="17">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="60" height="40" tilewidth="16" tileheight="16" infinite="0" nextlayerid="13" nextobjectid="18">
  <tileset firstgid="1" source="../tsx/spring.tsx"/>
  <tileset firstgid="49" source="../tsx/spring_bg.tsx"/>
  <tileset firstgid="53" source="../tsx/player.tsx"/>
@@ -60,9 +60,9 @@
     <property name="hp" type="int" value="70"/>
    </properties>
   </object>
-  <object id="16" name="samurai" gid="59" x="613.916" y="633.547" width="102" height="102">
+  <object id="17" name="archer" gid="60" x="608.294" y="645.667" width="102" height="128">
    <properties>
-    <property name="hp" type="int" value="230"/>
+    <property name="hp" type="int" value="270"/>
    </properties>
   </object>
  </objectgroup>
