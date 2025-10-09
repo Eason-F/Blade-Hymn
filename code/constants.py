@@ -20,3 +20,18 @@ TILE_SIZE = 16
 
 GRAVITY = 800
 PlAYER_HEALTH = 70
+
+BG_FILL = {
+    "spring": "#112218",
+    "desert": "#0F0F2B",
+    "winter": "#160804"
+}
+
+Z_VALUES = {
+    'bg': -1,
+    'ground': 1,
+    'fg': 2,
+    'enemies': 3,
+    'player': 4,
+    'ui': 99
+}

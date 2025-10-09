@@ -53,7 +53,7 @@
       "impact": [9],
       "size": [40, 50],
       "rel_pos": [30, 0],
-      "damage": 7,
+      "damage": 6,
       "knockback": 2,
       "stun": false
     },
@@ -61,7 +61,7 @@
       "impact": [6],
       "size": [33, 10],
       "rel_pos": [30, 5],
-      "damage": 12,
+      "damage": 10,
       "knockback": 5,
       "stun": true
     }
@@ -96,13 +96,13 @@
       "rel_pos": [30, 15],
       "damage": 7,
       "knockback": 5,
-      "stun": true
+      "stun": false
     },
     "block": {
-      "size": [70, 30],
-      "rel_pos": [10, 0],
+      "size": [1000, 70],
+      "rel_pos": [0, 0],
       "damage": 4,
-      "knockback": 2,
+      "knockback": 0,
       "stun": true
     }
   },

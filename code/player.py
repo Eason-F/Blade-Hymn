@@ -11,6 +11,7 @@ class Player(pygame.sprite.Sprite):
         self.frames, self.frame_index = frames, 0
         self.state, self.direction = 'idle', 1
         self.image = self.frames[self.state][self.frame_index]
+        self.z = Z_VALUES['player']
 
         # hitbox rect
         self.rect = self.image.get_frect(topleft=pos)
@@ -66,10 +67,10 @@ class Player(pygame.sprite.Sprite):
             "hit_cooldown": Timer(400, sustained=True),
             "dash": Timer(3000, auto_start=True, repeat=True),
             "dash_cooldown": Timer(300, sustained=True),
-            "dash_invulnerability": Timer(200, sustained=True),
+            "dash_invulnerability": Timer(250, sustained=True),
             "attack_combo": Timer(200),
             "attack": Timer(200, sustained=True),
-            "heal_cooldown": Timer(1000, sustained=True),
+            "heal_cooldown": Timer(2000, sustained=True),
         }
 
     def input(self, dt):
@@ -231,7 +232,7 @@ class Player(pygame.sprite.Sprite):
     def move_camera(self):
         camera_speed = math.dist(self.hitbox_rect.center, self.camera_rect.center) ** 2 / 10000
         self.camera_rect.x += (self.hitbox_rect.x - self.camera_rect.x) * camera_speed
-        self.camera_rect.y += (self.hitbox_rect.y - self.camera_rect.y) * camera_speed
+        self.camera_rect.y += (self.hitbox_rect.y - self.camera_rect.y) * camera_speed - 10
 
     # combat
     def knock_back(self, direction, force):

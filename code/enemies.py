@@ -17,6 +17,7 @@ class Enemy(pygame.sprite.Sprite, ABC):
         self.state, self.direction = 'walk', 1
         self.image = self.frames[self.state][self.frame_index]
         self.attack_data = attack_data
+        self.z = Z_VALUES['enemies']
 
         self.timers = {
             "attack_cooldown": Timer(1200, sustained=True),
@@ -334,10 +335,10 @@ class BossSamurai(Enemy):
         self.sight_range = 300
         self.attack_range = 50
 
-        self.base_attack_choice = [1, 1, 1, 1, 2, 2, 3]
+        self.base_attack_choice = [1, 1, 1, 2, 2, 3]
         self.attack_choice = self.base_attack_choice
 
-        self.timers["attack_cooldown"] = Timer(1000, sustained=True)
+        self.timers["attack_cooldown"] = Timer(600, sustained=True)
         self.timers["blocking"] = Timer(3000, sustained=True)
         self.timers["block_duration"] = Timer(200, sustained=True)
 
@@ -346,22 +347,26 @@ class BossSamurai(Enemy):
             self.can_attack = False
             self.is_attacking = True
 
-        if self.can_attack and not self.timers["attack_cooldown"].active:
-            if not self.is_attacking:
-                if random.randint(0, 3) == 1:
-                    self.timers["blocking"].activate()
-                else:
+        if not self.timers["attack_cooldown"].active:
+            if self.can_attack:
+                if not self.is_attacking:
                     self.frame_index = 0
                     self.is_attacking = True
-                self.direction = 1 if self.player_pos[0] > self.hitbox_rect.center[0] else -1
+                    self.direction = 1 if self.player_pos[0] > self.hitbox_rect.center[0] else -1
+                    self.block()
 
-        if 'melee' in self.state:
             if self.frame_index >= len(self.frames[self.state]):
-                self.is_attacking = False
+                self.frame_index = 0
+                if 'melee' in self.state:
+                    self.timers["attack_cooldown"].activate()
+                    self.is_attacking = False
 
-                self.timers["attack_cooldown"].activate()
-                self.attack_choice = self.base_attack_choice
-                self.attack_stage = random.choice(self.attack_choice)
+                    self.attack_choice = self.base_attack_choice
+                    self.attack_stage = random.choice(self.attack_choice)
+
+    def block(self):
+        if random.randint(0, 2) == 1:
+            self.timers["blocking"].activate()
 
     def counter_attack(self):
         if random.randint(0, 2) == 1:
@@ -369,11 +374,11 @@ class BossSamurai(Enemy):
             self.timers["attack_cooldown"].deactivate()
 
     def take_damage(self, damage):
-        if not self.timers["blocking"].active:
-            super().take_damage(damage)
-        else:
+        if self.timers["blocking"].active:
             self.timers["block_duration"].activate()
             self.timers["attack_cooldown"].deactivate()
+            damage *= 0.8
+        super().take_damage(damage)
 
     def get_state(self):
         if self.timers["blocking"].active:
@@ -382,7 +387,7 @@ class BossSamurai(Enemy):
             self.state = 'hurt'
         elif self.is_attacking:
             self.state = f'melee{self.attack_stage}'
-        elif not self.can_attack:
+        else:
             if abs(self.velocity.x) > 0.5:
                 self.state = 'walk'
             else:
@@ -396,7 +401,7 @@ class BossSamurai(Enemy):
             if any(check):
                 self.timers["attack"].activate()
                 self.timers["block_duration"].deactivate()
-        elif self.timers["block_duration"].active:
+        elif self.state == 'block' and self.timers["block_duration"].active:
             self.timers["attack"].activate()
             self.timers["blocking"].deactivate()
         else:
@@ -485,8 +490,7 @@ class BossArcher(Enemy):
             self.timers["combo_cooldown"].activate()
         else:
             self.combo_length = 0
-            if random.randint(0, 1) == 1:
-                self.attack_choice = [3]
+            self.attack_choice = [3]
 
     def counter_attack(self):
         if random.randint(0, 3) == 1:
