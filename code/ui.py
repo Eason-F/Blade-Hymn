@@ -69,6 +69,19 @@ class Counter(AnimatedSprite):
         self.prev_rect = self.rect.copy()
 
 # menu
+class Text(pygame.sprite.Sprite):
+    def __init__(self, pos, text, size, groups = None):
+        super().__init__(groups)
+        self.font = pygame.font.Font(os.path.join(abs_path, 'data', 'ttf', 'PixelifySans.ttf'), size)
+
+        self.text = text.split('\n')
+        self.size = size
+        self.pos = pos
+
+    def draw(self, display_surf, offset):
+        for i, line in enumerate(self.text):
+            display_surf.blit(self.font.render(line, False, "black"), (self.pos[0], self.pos[1] + i * self.size + 1) + offset)
+
 class SelectionIndicator(Sprite):
     def __init__(self, pos, size, padding, groups = None, z = Z_VALUES["ui"]):
         size = [size[0] + padding, size[1] + padding]

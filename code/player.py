@@ -1,4 +1,5 @@
 from constants import *
+from settings import *
 
 from timer import Timer
 from sprite import Hitbox
@@ -46,15 +47,16 @@ class Player(pygame.sprite.Sprite):
         self.hp = PlAYER_HEALTH
         self.max_heal = self.heal_count = 6
         self.heal_amount = 10 + self.hp / 5
-        self.knocked_down = False
-        self.vulnerable = True
-        self.damaging_hitbox = None
+        self.fallen = False
 
-        # collisions
-        self.collision_sprites = collision_sprites
+        self.knocked_down, self.vulnerable = False, True
+        self.damaging_hitbox = None
 
         self.damage_sprites = damage_sprites
 
+
+        # collisions
+        self.collision_sprites = collision_sprites
         self.colliding = {
             "ground": False,
             "hitbox": False
@@ -77,39 +79,33 @@ class Player(pygame.sprite.Sprite):
         keys = pygame.key.get_pressed()
         movement_vect = vector(0, 0)
 
-        if keys[pygame.K_LCTRL]:
-            self.knock_down(-self.direction)
-
         if not self.control_lock:
             if not ("melee" in self.state and self.attack_combo):
-                if keys[pygame.K_LEFT]:
+                if keys[LEFT_KEY]:
                     movement_vect.x -= self.acceleration
                     self.direction = -1
 
-                if keys[pygame.K_RIGHT]:
+                if keys[RIGHT_KEY]:
                     movement_vect.x += self.acceleration
                     self.direction = 1
 
             if not self.is_attacking:
-                if keys[pygame.K_LSHIFT]:
+                if keys[DASH_KEY]:
                     movement_vect.x = self.dash(movement_vect.x)
-                elif keys[pygame.K_r]:
+                elif keys[HEAL_KEY]:
                     self.heal()
 
             self.velocity.x += movement_vect.x * dt
 
             if self.colliding["ground"] or self.can_air_atk:
-                if keys[pygame.K_x]:
+                if keys[ATTACK_KEY]:
                     self.attack()
             self.attack_update()
 
             if not self.attack_combo and self.colliding["ground"]:
-                if keys[pygame.K_SPACE]:
+                if keys[JUMP_KEY]:
                     self.is_jumping = True
                     self.can_air_atk = True
-        else:
-            if keys[pygame.K_SPACE]:
-                self.timers["stun_recovery"].deactivate()
 
     # input related actions
     def dash(self, speed):
@@ -279,6 +275,8 @@ class Player(pygame.sprite.Sprite):
 
     def take_damage(self, damage):
         self.hp -= damage
+        if self.hp <= 0:
+            self.fallen = True
 
     # animations
     def animate(self, dt):

@@ -41,7 +41,7 @@
       "stun": false
     }
   },
-  "sbasic": {
+  "basic": {
     "contact" : {
       "size": [15, 20],
       "rel_pos": [0, 0],

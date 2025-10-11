@@ -60,6 +60,15 @@ class AllSprites(CameraLockedSprites):
             offset_pos = sprite.rect.topleft + self.offset
             surface.blit(sprite.image, offset_pos)
 
+class TextSprites(CameraLockedSprites):
+    def __init__(self, width, height):
+        super().__init__(width, height)
+
+    def draw(self, surface, target_pos):
+        super().draw(surface, target_pos)
+        for sprite in self:
+            sprite.draw(surface, self.offset)
+
 class HitboxSprites(CameraLockedSprites):
     def __init__(self, width, height):
         super().__init__(width, height)

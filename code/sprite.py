@@ -93,7 +93,7 @@ class Transition(Sprite):
 
         self.image.fill(colour)
         self.target_alpha = target
-        self.image.set_alpha(255 - self.target_alpha)
+        self.image.set_alpha(0)
 
         self.timer = Timer(duration, sustained=True)
         self.active = False
@@ -105,6 +105,7 @@ class Transition(Sprite):
         self.complete = False
 
         self.image.set_alpha(255 - self.target_alpha)
+        self.timer.deactivate()
         self.timer.activate()
 
     def update(self, dt, **kwargs):
@@ -115,6 +116,7 @@ class Transition(Sprite):
 
             if not self.timer.active:
                 self.complete = True
+                self.active = False
 
     def draw(self, surface):
         if self.active:

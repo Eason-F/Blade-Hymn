@@ -4,11 +4,14 @@ import math, random
 import pygame
 from pygame.math import Vector2 as vector
 
+pygame.init()
 # general
 abs_path = os.path.join(os.path.split(os.path.abspath(__file__))[0], '..')
 
-SCALE_FACTOR = 3
-GAME_WIDTH, GAME_HEIGHT = 1280/3, 720/3
+DISPLAY_INFO = pygame.display.Info()
+GAME_WIDTH, GAME_HEIGHT = 426, 240
+
+SCALE_FACTOR = DISPLAY_INFO.current_w / GAME_WIDTH
 WINDOW_WIDTH, WINDOW_HEIGHT = GAME_WIDTH * SCALE_FACTOR, GAME_HEIGHT * SCALE_FACTOR
 
 MASTER_DISPLAY = pygame.surface.Surface((GAME_WIDTH, GAME_HEIGHT))
@@ -28,7 +31,7 @@ BG_FILL = {
 }
 
 Z_VALUES = {
-    'bg': -1,
+    'bg': 0,
     'ground': 1,
     'fg': 2,
     'enemies': 3,
