@@ -89,7 +89,7 @@ class Projectile(Hitbox):
 # effects
 class Transition(Sprite):
     def __init__(self, duration, target, colour = 'black', groups = None):
-        super().__init__((0, 0), pygame.Surface((GAME_WIDTH, GAME_HEIGHT), pygame.SRCALPHA), groups, 99)
+        super().__init__((0, 0), pygame.Surface((GAME_WIDTH * 5, GAME_HEIGHT * 5), pygame.SRCALPHA), groups, 99)
 
         self.image.fill(colour)
         self.target_alpha = target
@@ -117,6 +117,8 @@ class Transition(Sprite):
             if not self.timer.active:
                 self.complete = True
                 self.active = False
+        else:
+            self.complete = False
 
     def draw(self, surface):
         if self.active:

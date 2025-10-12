@@ -5,7 +5,7 @@ from timer import Timer
 from sprite import Hitbox
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos, groups, collision_sprites, damage_sprites, frames, attack_data):
+    def __init__(self, pos, groups, collision_sprites, damage_sprites, frames, sounds, attack_data, level_dim):
         super().__init__(groups)
 
         # animation
@@ -56,11 +56,16 @@ class Player(pygame.sprite.Sprite):
 
 
         # collisions
+        self.level_width, self.level_height = level_dim
         self.collision_sprites = collision_sprites
         self.colliding = {
             "ground": False,
             "hitbox": False
         }
+
+        # sounds
+        self.swing_sound = sounds['swing']
+        self.dash_sound = sounds['dash']
 
         # timers
         self.timers = {
@@ -73,6 +78,7 @@ class Player(pygame.sprite.Sprite):
             "attack_combo": Timer(200),
             "attack": Timer(200, sustained=True),
             "heal_cooldown": Timer(2000, sustained=True),
+            "sound": Timer(200, sustained=True)
         }
 
     def input(self, dt):
@@ -110,6 +116,7 @@ class Player(pygame.sprite.Sprite):
     # input related actions
     def dash(self, speed):
         if self.dash_count > 0 and not self.timers["dash_cooldown"].active:
+            self.dash_sound.play()
             speed = self.dash_distance * self.direction
 
             self.dash_count -= 1
@@ -170,6 +177,7 @@ class Player(pygame.sprite.Sprite):
 
         friction_factor = self.friction * -self.velocity.x
         self.velocity.x += friction_factor / 2 * dt
+        self.velocity.x = self.velocity.x if abs(self.velocity.x) < 1000 else 1000
         self.hitbox_rect.x += self.velocity.x * self.speed * dt
         self.velocity.x += friction_factor / 2 * dt
         self.surface_collisions('x')
@@ -180,6 +188,7 @@ class Player(pygame.sprite.Sprite):
                 self.can_atk_boost = False
 
         self.velocity.y += self.gravity / 2 * dt
+        self.velocity.y = self.velocity.y if abs(self.velocity.y) < 1000 else 1000
         self.hitbox_rect.y += self.velocity.y * dt
         self.velocity.y += self.gravity / 2 * dt
         self.surface_collisions('y')
@@ -227,8 +236,13 @@ class Player(pygame.sprite.Sprite):
 
     def move_camera(self):
         camera_speed = math.dist(self.hitbox_rect.center, self.camera_rect.center) ** 2 / 10000
+        camera_speed = camera_speed if camera_speed < 100 else 100
         self.camera_rect.x += (self.hitbox_rect.x - self.camera_rect.x) * camera_speed
         self.camera_rect.y += (self.hitbox_rect.y - self.camera_rect.y) * camera_speed - 10
+
+    def check_depth(self):
+        if self.hitbox_rect.y >= self.level_height + 500:
+            self.take_damage(999)
 
     # combat
     def knock_back(self, direction, force):
@@ -319,6 +333,9 @@ class Player(pygame.sprite.Sprite):
         if 'melee' in self.state or 'air' in self.state:
             if int(self.frame_index) + 1 in self.attack_data[self.state]["impact"]:
                 self.timers["attack"].activate()
+                if not self.timers["sound"].active:
+                    self.swing_sound.play()
+                    self.timers["sound"].activate()
         else:
             self.timers["attack"].deactivate()
 
@@ -339,6 +356,7 @@ class Player(pygame.sprite.Sprite):
 
         self.input(dt)
         self.move(dt)
+        self.check_depth()
 
         self.get_state()
         self.animate(dt)

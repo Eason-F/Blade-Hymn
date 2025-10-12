@@ -91,7 +91,8 @@ class SelectionIndicator(Sprite):
         self.padding = padding
         rect = pygame.FRect(0, 0, *size)
         self.image.fill('black')
-        pygame.draw.rect(self.image, "white", rect, width=2)
+        pygame.draw.rect(self.image, "white", rect, width=1, border_radius=10)
+        self.image.set_colorkey('black')
 
     def update(self, dt, **kwargs):
         target_pos = kwargs.get('selection_pos', (0, 0))
@@ -100,8 +101,8 @@ class SelectionIndicator(Sprite):
         x_change = (target_pos[0] - self.rect.center[0]) * adjust_speed * dt
         y_change = (target_pos[1] - self.rect.center[1]) * adjust_speed * dt
         self.rect.center = (
-            self.rect.center[0] + (x_change if abs(target_pos[0] - self.rect.center[0]) > 0.3 else (target_pos[0] - self.rect.center[0])),
-            self.rect.center[1] + (y_change if abs(target_pos[1] - self.rect.center[1]) > 0.3 else (target_pos[1] - self.rect.center[1]))
+            self.rect.center[0] + (x_change if abs(target_pos[0] - self.rect.center[0]) > 1 else (target_pos[0] - self.rect.center[0])),
+            0.5 + self.rect.center[1] + (y_change if abs(target_pos[1] - self.rect.center[1]) > 1 else (target_pos[1] - self.rect.center[1]))
         )
 
 class Button(Sprite):

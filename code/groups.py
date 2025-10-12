@@ -35,19 +35,17 @@ class AllSprites(CameraLockedSprites):
         self.desaturate_surf = pygame.Surface((GAME_WIDTH, GAME_HEIGHT), pygame.SRCALPHA)
         self.desaturate_surf.fill((255, 255, 255, 50))
 
-    def draw_bg(self, surface, target_pos):
-        x_offset = -(target_pos[0] - GAME_WIDTH / 2)
-        y_offset = -(target_pos[1] - GAME_HEIGHT / 2)
+    def draw_bg(self, surface):
         for tile in range(self.tiles):
             for i in range(len(self.bg_tiles)):
                 bg = self.bg_tiles[i]
                 surface.blit(bg, (
-                        self.tile_width * tile + (x_offset * (i / 25)),
-                        (y_offset * (i / 25)) - 5
+                        self.tile_width * tile + (self.offset.x * (i / 25)),
+                        (self.offset.y * (i / 25)) - 5
                     )
                 )
 
-        bottom = (y_offset * ((len(self.bg_tiles) - 1) / 25)) - 5 + GAME_HEIGHT
+        bottom = (self.offset.y * ((len(self.bg_tiles) - 1) / 25)) - 5 + GAME_HEIGHT
         fill = pygame.rect.FRect(0, bottom, GAME_WIDTH, GAME_HEIGHT)
         pygame.draw.rect(surface, self.colour, fill)
         surface.blit(self.desaturate_surf, (0, 0))
@@ -55,7 +53,7 @@ class AllSprites(CameraLockedSprites):
 
     def draw(self, surface, target_pos):
         super().draw(surface, target_pos)
-        self.draw_bg(surface, target_pos)
+        self.draw_bg(surface)
         for sprite in sorted(self.sprites(), key = lambda x: x.z):
             offset_pos = sprite.rect.topleft + self.offset
             surface.blit(sprite.image, offset_pos)

@@ -7,7 +7,7 @@ from sprite import Hitbox, Projectile
 
 
 class Enemy(pygame.sprite.Sprite, ABC):
-    def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data):
+    def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, sounds, attack_data):
         super().__init__(groups)
         self.player = player
         self.player_pos = player.hitbox_rect.center
@@ -26,6 +26,7 @@ class Enemy(pygame.sprite.Sprite, ABC):
             "knocked_back": Timer(700, sustained=True),
             "hit_cooldown": Timer(250, sustained=True),
             "fallen": Timer(2000, sustained=True),
+            "sound": Timer(500, sustained=True)
         }
 
         # hitbox rect
@@ -61,6 +62,10 @@ class Enemy(pygame.sprite.Sprite, ABC):
         # variable
         self.sight_range = None
         self.attack_range = None
+
+        # sounds
+        self.swing_sound = sounds['swing']
+        self.block_sound = sounds['block']
 
     # movement
     def move(self, dt):
@@ -132,7 +137,7 @@ class Enemy(pygame.sprite.Sprite, ABC):
     def find_player(self):
         player_dist_x = abs(self.hitbox_rect.center[0] - self.player_pos[0])
         player_dist_y = abs(self.hitbox_rect.center[1] - self.player_pos[1])
-        if player_dist_x <= self.sight_range and player_dist_y <= 80:
+        if player_dist_x <= self.sight_range and player_dist_y <= 60:
             self.player_found = True
         else:
             self.player_found = False
@@ -255,8 +260,8 @@ class Enemy(pygame.sprite.Sprite, ABC):
         self.hit_flicker()
 
 class BasicSwordsman(Enemy):
-    def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data):
-        super().__init__(pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data)
+    def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, sounds, attack_data):
+        super().__init__(pos, hp, groups, collision_sprites, damage_sprites, player, frames, sounds,attack_data)
 
         self.hitbox_rect = self.rect.inflate(-84, -42)
         self.prev_rect = self.hitbox_rect.copy()
@@ -319,14 +324,17 @@ class BasicSwordsman(Enemy):
         if 'melee' in self.state:
             if int(self.frame_index) + 1 in self.attack_data[self.state]["impact"]:
                 self.timers["attack"].activate()
+                if not self.timers["sound"].active:
+                    self.swing_sound.play()
+                    self.timers["sound"].activate()
         else:
             self.timers["attack"].deactivate()
 
         super().update_hitboxes()
 
 class BossSamurai(Enemy):
-    def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data):
-        super().__init__(pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data)
+    def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, sounds, attack_data):
+        super().__init__(pos, hp, groups, collision_sprites, damage_sprites, player, frames, sounds, attack_data)
 
         self.hitbox_rect = self.rect.inflate(-80, -52)
         self.prev_rect = self.hitbox_rect.copy()
@@ -365,7 +373,7 @@ class BossSamurai(Enemy):
                     self.attack_stage = random.choice(self.attack_choice)
 
     def block(self):
-        if random.randint(0, 2) == 1:
+        if random.randint(0, 4) == 1:
             self.timers["blocking"].activate()
 
     def counter_attack(self):
@@ -377,7 +385,8 @@ class BossSamurai(Enemy):
         if self.timers["blocking"].active:
             self.timers["block_duration"].activate()
             self.timers["attack_cooldown"].deactivate()
-            damage *= 0.8
+            self.block_sound.play()
+            damage *= 0.5
         super().take_damage(damage)
 
     def get_state(self):
@@ -397,10 +406,12 @@ class BossSamurai(Enemy):
 
     def update_hitboxes(self):
         if 'melee' in self.state:
-            check = [int(self.frame_index) + 1 > impact for impact in self.attack_data[self.state]["impact"]]
-            if any(check):
+            if int(self.frame_index) + 1 in self.attack_data[self.state]["impact"]:
                 self.timers["attack"].activate()
                 self.timers["block_duration"].deactivate()
+                if not self.timers["sound"].active:
+                    self.swing_sound.play()
+                    self.timers["sound"].activate()
         elif self.state == 'block' and self.timers["block_duration"].active:
             self.timers["attack"].activate()
             self.timers["blocking"].deactivate()
@@ -410,8 +421,8 @@ class BossSamurai(Enemy):
         super().update_hitboxes()
 
 class BossArcher(Enemy):
-    def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data):
-        super().__init__(pos, hp, groups, collision_sprites, damage_sprites, player, frames, attack_data)
+    def __init__(self, pos, hp, groups, collision_sprites, damage_sprites, player, frames, sounds, attack_data):
+        super().__init__(pos, hp, groups, collision_sprites, damage_sprites, player, frames, sounds, attack_data)
 
         self.hitbox_rect = self.rect.inflate(-80, -78)
         self.prev_rect = self.hitbox_rect.copy()
@@ -517,6 +528,9 @@ class BossArcher(Enemy):
         if 'melee' in self.state:
             if int(self.frame_index) + 1 in self.attack_data[self.state]["impact"]:
                 self.timers["attack"].activate()
+                if not self.timers["sound"].active:
+                    self.swing_sound.play()
+                    self.timers["sound"].activate()
         elif self.state == "shoot":
             if int(self.frame_index) + 1 in self.attack_data[self.state]["impact"]:
                 self.has_shot = False

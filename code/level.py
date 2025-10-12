@@ -8,7 +8,7 @@ from groups import AllSprites, AttackingSprites, HitboxSprites, UISprites, TextS
 from ui import HealthBar, CounterToken, Counter, Text
 
 class Level:
-    def __init__(self, name, tmx_map, ui_frames, level_frames, player_frames, attack_impact_frames):
+    def __init__(self, name, tmx_map, ui_frames, level_frames, audio_files, player_frames, attack_impact_frames):
         self.display_surf = MASTER_DISPLAY
         self.name = name
 
@@ -36,13 +36,15 @@ class Level:
 
         # setup
         self.ui_frames = ui_frames
-        self.reset(tmx_map, level_frames, player_frames, attack_impact_frames)
+        self.reset(tmx_map, level_frames, audio_files, player_frames, attack_impact_frames)
 
         # transitions
         self.out_transition = Transition(1000, 255, groups=self.all_sprites)
         self.in_transition = Transition(2000, 0, groups=self.all_sprites)
 
-    def setup(self, tmx_map, level_frames, player_frames, attack_impact_frames):
+        # sound
+
+    def setup(self, tmx_map, level_frames, audio_files, player_frames, attack_impact_frames):
         for x, y, surf in tmx_map.get_layer_by_name("ground").tiles():
             Sprite((x * TILE_SIZE, y * TILE_SIZE), surf, (self.all_sprites, self.collision_sprites), Z_VALUES['ground'])
 
@@ -62,7 +64,9 @@ class Level:
                 collision_sprites = self.collision_sprites,
                 damage_sprites = self.damage_sprites,
                 frames = player_frames,
-                attack_data = attack_impact_frames["player"]
+                sounds = audio_files,
+                attack_data = attack_impact_frames["player"],
+                level_dim = (self.level_width, self.level_height)
             )
 
         for obj in tmx_map.get_layer_by_name("objects"):
@@ -74,7 +78,7 @@ class Level:
                     groups = self.text_sprites
                 )
 
-            elif obj.name in ["sbasic", "dbasic", "cbasic"]:
+            elif obj.name in ["sbasic", "dbasic", "wbasic"]:
                 BasicSwordsman(
                     pos = (obj.x, obj.y),
                     hp = obj.hp,
@@ -83,6 +87,7 @@ class Level:
                     damage_sprites = self.damage_sprites,
                     player = self.player,
                     frames = level_frames[obj.name],
+                    sounds = audio_files,
                     attack_data = attack_impact_frames["basic"]
                 )
             elif obj.name == 'samurai':
@@ -94,11 +99,12 @@ class Level:
                     damage_sprites = self.damage_sprites,
                     player = self.player,
                     frames = level_frames[obj.name],
+                    sounds = audio_files,
                     attack_data = attack_impact_frames[obj.name]
                 )
                 self.boss_health_bar = HealthBar((29, 20), obj.hp, self.ui_sprites, self.ui_frames[obj.name])
             elif obj.name == 'archer':
-                BossArcher(
+                self.boss = BossArcher(
                     pos = (obj.x, obj.y),
                     hp = obj.hp,
                     groups = (self.all_sprites, self.attacking_sprites),
@@ -106,14 +112,15 @@ class Level:
                     damage_sprites = self.damage_sprites,
                     player = self.player,
                     frames = level_frames[obj.name],
+                    sounds = audio_files,
                     attack_data = attack_impact_frames[obj.name]
                 )
-                # self.boss_health_bar = HealthBar((29, 20), obj.hp, self.ui_sprites, self.ui_frames[obj.name])
+                self.boss_health_bar = HealthBar((29, 20), obj.hp, self.ui_sprites, self.ui_frames[obj.name])
 
         HealthBar((10, 190), PlAYER_HEALTH, self.ui_sprites, self.ui_frames['player'])
         Counter((10, 215), self.ui_frames['player']['heal'], self.ui_frames['player']['heal_frame'], self.player.max_heal, self.ui_sprites)
 
-    def reset(self, tmx_map, level_frames, player_frames, attack_impact_frames):
+    def reset(self, tmx_map, level_frames, audio_files, player_frames, attack_impact_frames):
         self.all_sprites.empty()
         self.ui_sprites.empty()
         self.collision_sprites.empty()
@@ -126,7 +133,7 @@ class Level:
         self.boss = None
         self.boss_health_bar = None
         self.status = "normal"
-        self.setup(tmx_map, level_frames, player_frames, attack_impact_frames)
+        self.setup(tmx_map, level_frames, audio_files, player_frames, attack_impact_frames)
 
     def update_ui(self, dt):
         for sprite in self.ui_sprites:
@@ -159,9 +166,10 @@ class Level:
         self.damage_sprites.empty()
 
         # update
-        self.attacking_sprites.update()
-        self.damage_sprites.update(dt)
-        self.all_sprites.update(dt)
+        if self.status == 'normal':
+            self.attacking_sprites.update()
+            self.damage_sprites.update(dt)
+            self.all_sprites.update(dt)
         self.update_ui(dt)
         self.check_status()
 
