@@ -1,5 +1,3 @@
-import pygame.transform
-
 from constants import *
 
 class CameraLockedSprites(pygame.sprite.Group):

@@ -1,5 +1,3 @@
-import pygame
-
 from constants import *
 from timer import Timer
 
