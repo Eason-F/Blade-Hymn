@@ -7,9 +7,9 @@ from pygame.math import Vector2 as vector
 pygame.init()
 
 # general
-# abs_path = os.path.split(os.path.split(os.path.abspath(__file__))[0])[0]
+abs_path = os.path.split(os.path.split(os.path.abspath(__file__))[0])[0]
 
-abs_path = os.path.split(os.path.abspath(__file__))[0]
+# abs_path = os.path.split(os.path.abspath(__file__))[0]
 
 DISPLAY_INFO = pygame.display.Info()
 GAME_WIDTH, GAME_HEIGHT = 426, 240
