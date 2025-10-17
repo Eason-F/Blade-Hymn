@@ -125,7 +125,7 @@ class Player(pygame.sprite.Sprite):
         return speed
 
     def heal(self):
-        if not self.timers["heal_cooldown"].active:
+        if not self.timers["heal_cooldown"].active and self.heal_count > 0:
             self.hp = self.hp + self.heal_amount if self.hp + self.heal_amount <= PlAYER_HEALTH else PlAYER_HEALTH
             self.heal_count -= 1
             self.timers["heal_cooldown"].activate()
